@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="paymark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Licitações — Fase de Lances</title>
+<style>
+:root { color-scheme: light dark; }
+
+html[data-theme="paymark"] {
+  color-scheme: dark;
+  --bg: #0b0909;
+  --glow: radial-gradient(900px 480px at 50% -14%, rgba(148,106,196,.20), transparent 62%),
+          radial-gradient(1100px 620px at 50% 6%, rgba(168,116,74,.22), transparent 66%),
+          radial-gradient(700px 420px at 12% 34%, rgba(120,74,58,.13), transparent 70%);
+  --grid: rgba(255,255,255,.028);
+  --surface: rgba(255,255,255,.045); --surface-2: rgba(255,255,255,.028);
+  --border: rgba(255,255,255,.10); --border-soft: rgba(255,255,255,.055);
+  --text: #f6f3f0; --text-2: #d6cfc8; --muted: #96908a;
+  --btn-bg: linear-gradient(180deg,#fbf7f2 0%,#d8cec2 100%); --btn-fg: #17120f;
+  --btn-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 6px 18px rgba(0,0,0,.45);
+  --ghost-bg: rgba(255,255,255,.05); --ghost-fg: #ece7e2; --field-bg: rgba(255,255,255,.055);
+  --ok: #7fd6a4; --ok-bg: rgba(70,190,130,.14);
+  --pend: #e8b878; --pend-bg: rgba(214,150,72,.15);
+  --err: #f0938a; --err-bg: rgba(214,88,74,.15);
+  --skip: #9b948e; --skip-bg: rgba(255,255,255,.06);
+  --link: #d9b48d;
+}
+html[data-theme="escuro"] {
+  color-scheme: dark;
+  --bg: #121316; --glow: none; --grid: rgba(255,255,255,.022);
+  --surface: #1a1c20; --surface-2: #16181b; --border: #2b2e34; --border-soft: #232629;
+  --text: #eceef1; --text-2: #c8ccd2; --muted: #878d96;
+  --btn-bg: #eceef1; --btn-fg: #16181b; --btn-shadow: none;
+  --ghost-bg: #22252a; --ghost-fg: #eceef1; --field-bg: #1e2126;
+  --ok: #6fd39c; --ok-bg: rgba(60,180,120,.15);
+  --pend: #e5b26b; --pend-bg: rgba(210,145,60,.16);
+  --err: #ef8e85; --err-bg: rgba(212,80,68,.16);
+  --skip: #8a9099; --skip-bg: rgba(255,255,255,.06);
+  --link: #7fb6f0;
+}
+html[data-theme="claro"] {
+  color-scheme: light;
+  --bg: #f7f7f5; --glow: none; --grid: rgba(0,0,0,.018);
+  --surface: #ffffff; --surface-2: #fbfbf9; --border: #e6e4de; --border-soft: #efede8;
+  --text: #1a1a19; --text-2: #45443f; --muted: #85827b;
+  --btn-bg: #1a1a19; --btn-fg: #ffffff; --btn-shadow: none;
+  --ghost-bg: #ffffff; --ghost-fg: #1a1a19; --field-bg: #ffffff;
+  --ok: #1f6b45; --ok-bg: #e4f2ea;
+  --pend: #96530a; --pend-bg: #fdf0dd;
+  --err: #a33228; --err-bg: #fbe6e4;
+  --skip: #78766f; --skip-bg: #f0eeea;
+  --link: #1f5fa8;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 26px 26px 44px; background: var(--bg); color: var(--text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  position: relative; min-height: 100vh;
+}
+body::before { content:""; position: fixed; inset: 0; pointer-events: none; z-index: 0; background: var(--glow); }
+body::after {
+  content:""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(900px 600px at 50% 0%, #000 20%, transparent 78%);
+  -webkit-mask-image: radial-gradient(900px 600px at 50% 0%, #000 20%, transparent 78%);
+}
+.wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; }
+
+.top { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 22px; height: 22px; flex: none; opacity: .95; }
+.brand b { font-size: 13.5px; letter-spacing: .16em; font-weight: 600; text-transform: uppercase; }
+.themes { margin-left: auto; display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-soft); }
+.themes button { border: none; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 550; padding: 5px 13px; border-radius: 999px; cursor: pointer; }
+.themes button[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--btn-shadow); }
+.who { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+
+h1 { font-size: 30px; line-height: 1.14; margin: 0 0 8px; font-weight: 600; letter-spacing: -0.025em; }
+h1 span { color: var(--muted); }
+.sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+
+.bar { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 9px 10px 9px 18px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+.bar label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-right: 4px; }
+input[type=date], input[type=text] { font: inherit; padding: 8px 12px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--field-bg); color: var(--text); }
+button { font: inherit; font-weight: 550; padding: 9px 17px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; transition: opacity .12s, transform .06s; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary, .btn-go { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--btn-shadow); }
+.btn-go { font-weight: 620; }
+.btn-ghost { background: var(--ghost-bg); color: var(--ghost-fg); border-color: var(--border); }
+.btn-mini { padding: 5px 12px; font-size: 12px; }
+.spacer { flex: 1; min-width: 8px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px,1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; backdrop-filter: blur(10px); }
+.card .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 620; }
+.card .val { font-size: 31px; font-weight: 620; margin-top: 6px; letter-spacing: -0.03em; line-height: 1; }
+.card.ok .val { color: var(--ok); } .card.pend .val { color: var(--pend); }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 20px; backdrop-filter: blur(10px); }
+.panel h2 { font-size: 12.5px; font-weight: 620; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--border-soft); font-weight: 620; white-space: nowrap; }
+td { padding: 11px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: top; color: var(--text-2); }
+tbody tr:last-child td { border-bottom: none; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.org { font-weight: 550; color: var(--text); }
+tfoot td { border-top: 1px solid var(--border); font-weight: 640; color: var(--text); }
+.tag { display: inline-block; font-size: 10.5px; font-weight: 640; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.tag.ok { background: var(--ok-bg); color: var(--ok); }
+.tag.pend { background: var(--pend-bg); color: var(--pend); }
+.tag.skip { background: var(--skip-bg); color: var(--skip); }
+.tag.err { background: var(--err-bg); color: var(--err); }
+a { color: var(--link); text-decoration: none; } a:hover { text-decoration: underline; }
+.muted { color: var(--muted); }
+.msg { padding: 13px 17px; border-radius: 14px; margin-bottom: 18px; font-size: 13px; border: 1px solid var(--border); background: var(--surface); }
+.msg.warn { border-color: var(--pend-bg); color: var(--pend); }
+.msg.err { border-color: var(--err-bg); color: var(--err); }
+.empty { padding: 40px 16px; text-align: center; color: var(--muted); }
+.foot { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 22px; }
+
+#setup { max-width: 640px; margin: 50px auto; }
+#setup .body { padding: 22px 24px 24px; }
+#setup p { color: var(--text-2); margin: 0 0 14px; }
+#setup input[type=text] { width: 100%; border-radius: 12px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
+code { background: var(--surface-2); border: 1px solid var(--border-soft); padding: 1px 6px; border-radius: 6px; font-size: 12.5px; }
+.hide { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="wrap hide" id="setup">
+  <div class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>
+      <b>Licitações</b>
+    </div>
+    <div class="themes"><button data-t="paymark">Paymark</button><button data-t="escuro">Escuro</button><button data-t="claro">Claro</button></div>
+  </div>
+  <h1>Configuração inicial</h1>
+  <div class="sub">Só na primeira vez. Depois é login com um clique.</div>
+  <div class="panel">
+    <h2>Cole seu OAuth Client ID do Google</h2>
+    <div class="body">
+      <p>Siga o guia <code>CONFIGURACAO-VERCEL.md</code> para gerar o ID no Google Cloud. Ele termina em <code>.apps.googleusercontent.com</code>.</p>
+      <input type="text" id="clientId" placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com" spellcheck="false">
+      <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-primary" id="btnSalvarId">Salvar e entrar</button>
+        <span class="muted" style="font-size:12px">Fica salvo só neste navegador.</span>
+      </div>
+      <div id="setupMsg" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap hide" id="app">
+  <div class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>
+      <b>Licitações</b>
+    </div>
+    <div class="who"><span id="conta"></span><button class="btn-ghost btn-mini" id="btnSair">Trocar conta</button></div>
+    <div class="themes"><button data-t="paymark">Paymark</button><button data-t="escuro">Escuro</button><button data-t="claro">Claro</button></div>
+  </div>
+
+  <h1>Controle de disputas<br><span>fase de lances</span></h1>
+  <div class="sub">Planilha <strong>Controle de Licitações_Fase de Lances</strong> no Google Drive · eventos no Google Agenda</div>
+
+  <div class="bar">
+    <label for="dt">Data da disputa</label>
+    <input type="date" id="dt">
+    <button class="btn-primary" id="btnBuscar">Buscar</button>
+    <button class="btn-ghost" id="btnHoje">Hoje</button>
+    <button class="btn-ghost" id="btnAmanha">Amanhã</button>
+    <div class="spacer"></div>
+    <button class="btn-go" id="btnLancar" disabled>Lançar na agenda</button>
+  </div>
+
+  <div id="msg"></div>
+  <div class="cards" id="cards"></div>
+
+  <div class="panel">
+    <h2 id="tituloTabela">Pregões da data</h2>
+    <div id="tabela"><div class="empty">Escolha uma data e clique em Buscar.</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Total cadastrado na planilha</h2>
+    <div id="geral"><div class="empty">—</div></div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const FILE_ID = '1Cu_A8-INW_yG_YKWA5xbfS0TQdElp40caglNJ2h3exc';
+const SCOPES  = 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+
+let TOKEN = null, TOKEN_CLIENT = null, PLANILHA = null, GRUPOS = [], DATA_SEL = '';
+const $ = id => document.getElementById(id);
+const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+             set: (k,v) => { try { localStorage.setItem(k,v); } catch (e) {} },
+             del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
+
+function aplicarTema(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.querySelectorAll('.themes').forEach(box =>
+    [...box.children].forEach(b => b.setAttribute('aria-pressed', b.dataset.t === t)));
+  ls.set('painel-lic-tema', t);
+}
+document.querySelectorAll('.themes').forEach(box => box.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (b) aplicarTema(b.dataset.t);
+}));
+aplicarTema(ls.get('painel-lic-tema') || 'paymark');
+
+const limpar = s => String(s == null ? '' : s).replace(/&#13;/g,'').replace(/\s+/g,' ').trim();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function moeda(s) {
+  if (typeof s === 'number') return s;
+  const n = parseFloat(String(s||'').replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.'));
+  return isNaN(n) ? 0 : n;
+}
+const fmtBRL = n => n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const isoParaBR = iso => { const [a,m,d] = iso.split('-'); return `${d}/${m}/${a}`; };
+const brParaIso = br => { const p = br.split('/'); return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : ''; };
+function isoMais(iso, dias) {
+  const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + dias);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function hojeIso(d0) {
+  const d = new Date(); d.setDate(d.getDate() + (d0||0));
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function normalizaData(v) {
+  const s = limpar(v);
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    const p = s.split('/');
+    return `${p[0].padStart(2,'0')}/${p[1].padStart(2,'0')}/${p[2]}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return isoParaBR(s.slice(0,10));
+  const n = Number(s);
+  if (s && !isNaN(n) && n > 20000 && n < 80000) {
+    const d = new Date(Date.UTC(1899,11,30) + n*86400000);
+    return `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${d.getUTCFullYear()}`;
+  }
+  return '';
+}
+
+async function api(url, opts) {
+  const r = await fetch(url, Object.assign({}, opts, {
+    headers: Object.assign({ Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' }, (opts||{}).headers)
+  }));
+  if (r.status === 401) { TOKEN = null; pedirToken(); throw new Error('Sessão expirada — autorize de novo.'); }
+  if (!r.ok) { let d; try { d = (await r.json()).error.message; } catch (e) { d = r.statusText; } throw new Error(d); }
+  return r.json();
+}
+async function carregarPlanilha() {
+  if (PLANILHA) return PLANILHA;
+  const meta = await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}?fields=sheets.properties.title`);
+  const aba = meta.sheets[0].properties.title;
+  const dados = await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}/values/${encodeURIComponent("'" + aba + "'!A1:T1000")}?valueRenderOption=FORMATTED_VALUE`);
+  const rows = dados.values || [];
+  const hi = rows.findIndex(r => r.indexOf('Link Effecti') !== -1);
+  if (hi === -1) throw new Error('Cabeçalho "Link Effecti" não encontrado na aba "' + aba + '".');
+  const idx = {}; rows[hi].forEach((h,i) => idx[limpar(h)] = i);
+  const col = (r, nome) => limpar(r[idx[nome]]);
+  const itens = [];
+  for (const r of rows.slice(hi+1)) {
+    if (!r || !r.length) continue;
+    const data = normalizaData(r[idx['Data da Disputa']]);
+    if (!data) continue;
+    const orgao = col(r,'Órgão / Comprador'), pregao = col(r,'Nº do Pregão / Dispensa');
+    itens.push({ data, orgao, pregao, uasg: col(r,'UASG'), link: col(r,'Link Effecti'),
+      limite: moeda(r[idx['LIMITE MÁX. LANCE (R$)']]), suspenso: /SUSPENSO/i.test(orgao), semNumero: !pregao });
+  }
+  PLANILHA = itens; return itens;
+}
+function agrupar(itens) {
+  const m = new Map();
+  for (const it of itens) {
+    const k = [it.data,it.orgao,it.pregao,it.uasg].join('§');
+    if (!m.has(k)) m.set(k, { data:it.data, orgao:it.orgao, pregao:it.pregao, uasg:it.uasg,
+      link:'', itens:0, limite:0, suspenso:it.suspenso, semNumero:it.semNumero });
+    const g = m.get(k); g.itens++; g.limite += it.limite; if (!g.link && it.link) g.link = it.link;
+  }
+  return [...m.values()];
+}
+async function eventosDoDia(iso) {
+  const u = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
+  u.searchParams.set('timeMin', iso + 'T00:00:00-03:00');
+  u.searchParams.set('timeMax', iso + 'T23:59:59-03:00');
+  u.searchParams.set('singleEvents','true');
+  u.searchParams.set('maxResults','250');
+  const d = await api(u.toString());
+  return (d.items||[]).map(e => ({ summary: e.summary||'', description: e.description||'' }));
+}
+function jaExiste(g, eventos) {
+  const chave = g.orgao.toLowerCase().slice(0,22);
+  return eventos.some(e => chave && e.summary.toLowerCase().includes(chave)
+    && g.pregao && (e.summary + ' ' + e.description).includes(g.pregao));
+}
+async function criarEvento(g, iso) {
+  return api('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+    method: 'POST',
+    body: JSON.stringify({
+      summary: 'WESLEY: ' + g.orgao,
+      description: `Link Effecti: ${g.link || '—'}\nNº do Pregão / Dispensa: ${g.pregao}\nUASG: ${g.uasg || '—'}`,
+      start: { date: iso }, end: { date: isoMais(iso,1) },
+      colorId: '10', reminders: { useDefault: true }
+    })
+  });
+}
+
+const setMsg = (t,tipo) => $('msg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
+function renderCards(g) {
+  const v = g.filter(x => !x.suspenso && !x.semNumero);
+  const na = v.filter(x => x.jaExiste).length, pend = v.length - na;
+  $('cards').innerHTML = `
+    <div class="card"><div class="lbl">Pregões na data</div><div class="val">${v.length}</div></div>
+    <div class="card"><div class="lbl">Itens lançados</div><div class="val">${v.reduce((a,x)=>a+x.itens,0)}</div></div>
+    <div class="card ok"><div class="lbl">Já na agenda</div><div class="val">${na}</div></div>
+    <div class="card pend"><div class="lbl">A lançar</div><div class="val">${pend}</div></div>`;
+  $('btnLancar').disabled = pend === 0;
+  $('btnLancar').textContent = pend === 0 ? 'Nada a lançar' : `Lançar ${pend} na agenda`;
+}
+function renderTabela(g) {
+  if (!g.length) { $('tabela').innerHTML = `<div class="empty">Nenhum pregão com disputa em ${DATA_SEL}.</div>`; return; }
+  const linhas = g.map(x => {
+    const tag = x.suspenso ? '<span class="tag skip">Suspenso</span>'
+      : x.semNumero ? '<span class="tag skip">Sem nº</span>'
+      : x.erro ? '<span class="tag err">Erro</span>'
+      : x.jaExiste ? '<span class="tag ok">Na agenda</span>'
+      : '<span class="tag pend">A lançar</span>';
+    const link = x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener">abrir</a>` : '<span class="muted">—</span>';
+    return `<tr><td class="org">${esc(x.orgao)}</td><td>${esc(x.pregao) || '<span class="muted">—</span>'}</td>
+      <td>${esc(x.uasg) || '<span class="muted">—</span>'}</td><td class="num">${x.itens}</td>
+      <td class="num">${x.limite ? fmtBRL(x.limite) : '<span class="muted">—</span>'}</td>
+      <td>${link}</td><td>${tag}</td></tr>`;
+  }).join('');
+  $('tabela').innerHTML = `<table><thead><tr><th>Órgão / Comprador</th><th>Nº Pregão</th><th>UASG</th>
+    <th class="num">Itens</th><th class="num">Soma limite máx.</th><th>Effecti</th><th>Status</th></tr></thead>
+    <tbody>${linhas}</tbody></table>`;
+}
+function renderGeral() {
+  const todos = agrupar(PLANILHA.filter(i => !i.suspenso && i.pregao));
+  const porData = new Map();
+  for (const g of todos) {
+    if (!porData.has(g.data)) porData.set(g.data, { p:0, i:0 });
+    const d = porData.get(g.data); d.p++; d.i += g.itens;
+  }
+  const ord = [...porData.entries()].sort((a,b) => brParaIso(a[0]) < brParaIso(b[0]) ? -1 : 1);
+  $('geral').innerHTML = `<table><thead><tr><th>Data da disputa</th><th class="num">Pregões</th><th class="num">Itens</th></tr></thead>
+    <tbody>${ord.map(([d,v]) => `<tr><td>${d}</td><td class="num">${v.p}</td><td class="num">${v.i}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>Total</td><td class="num">${todos.length}</td><td class="num">${todos.reduce((a,x)=>a+x.itens,0)}</td></tr></tfoot></table>`;
+}
+
+async function buscar() {
+  const iso = $('dt').value;
+  if (!iso) { setMsg('Escolha uma data primeiro.','warn'); return; }
+  DATA_SEL = isoParaBR(iso);
+  $('btnBuscar').disabled = true;
+  setMsg('Lendo a planilha e conferindo a agenda…');
+  try {
+    await carregarPlanilha();
+    renderGeral();
+    GRUPOS = agrupar(PLANILHA.filter(i => i.data === DATA_SEL));
+    const ev = await eventosDoDia(iso);
+    GRUPOS.forEach(g => g.jaExiste = jaExiste(g, ev));
+    $('tituloTabela').textContent = `Pregões com disputa em ${DATA_SEL}`;
+    renderCards(GRUPOS); renderTabela(GRUPOS);
+    const pul = GRUPOS.filter(g => g.suspenso || g.semNumero).length;
+    setMsg(pul ? `${pul} pregão(ões) fora do lançamento — suspenso ou sem número.` : '', 'warn');
+    $('foot').textContent = 'Última leitura: ' + new Date().toLocaleString('pt-BR');
+  } catch (e) { setMsg('Não consegui carregar: ' + esc(e.message), 'err'); }
+  finally { $('btnBuscar').disabled = false; }
+}
+async function lancar() {
+  const alvo = GRUPOS.filter(g => !g.suspenso && !g.semNumero && !g.jaExiste);
+  if (!alvo.length) return;
+  const iso = brParaIso(DATA_SEL);
+  $('btnLancar').disabled = true;
+  let ok = 0, falha = 0;
+  for (const g of alvo) {
+    setMsg(`Lançando ${ok+falha+1} de ${alvo.length}: ${esc(g.orgao)}…`);
+    try { await criarEvento(g, iso); g.jaExiste = true; g.erro = false; ok++; }
+    catch (e) { g.erro = true; falha++; }
+    renderTabela(GRUPOS);
+  }
+  renderCards(GRUPOS); renderTabela(GRUPOS);
+  setMsg(`${ok} evento(s) criado(s)${falha ? `, ${falha} com erro` : ''}.`, falha ? 'err' : '');
+}
+
+function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prompt: TOKEN ? '' : 'consent' }); }
+async function aposLogin() {
+  $('setup').classList.add('hide');
+  $('app').classList.remove('hide');
+  try { const u = await api('https://www.googleapis.com/oauth2/v3/userinfo'); $('conta').textContent = u.email || ''; } catch (e) {}
+  $('dt').value = hojeIso(1);
+  buscar();
+}
+function iniciarCliente(clientId) {
+  try {
+    TOKEN_CLIENT = google.accounts.oauth2.initTokenClient({
+      client_id: clientId, scope: SCOPES,
+      callback: resp => {
+        if (resp.error) { $('setupMsg').innerHTML = `<div class="msg err">${esc(resp.error_description || resp.error)}</div>`; $('setup').classList.remove('hide'); return; }
+        TOKEN = resp.access_token; aposLogin();
+      }
+    });
+    pedirToken();
+  } catch (e) {
+    $('setup').classList.remove('hide');
+    $('setupMsg').innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+  }
+}
+function boot() {
+  const id = ls.get('painel-lic-clientid');
+  if (id) { $('clientId').value = id; iniciarCliente(id); }
+  else $('setup').classList.remove('hide');
+}
+$('btnSalvarId').addEventListener('click', () => {
+  const id = $('clientId').value.trim();
+  if (!/\.apps\.googleusercontent\.com$/.test(id)) {
+    $('setupMsg').innerHTML = '<div class="msg err">O ID precisa terminar em .apps.googleusercontent.com</div>'; return;
+  }
+  ls.set('painel-lic-clientid', id);
+  $('setupMsg').innerHTML = '<div class="msg">Abrindo o login do Google…</div>';
+  iniciarCliente(id);
+});
+$('btnSair').addEventListener('click', () => { ls.del('painel-lic-clientid'); location.reload(); });
+$('btnBuscar').addEventListener('click', buscar);
+$('btnLancar').addEventListener('click', lancar);
+$('btnHoje').addEventListener('click', () => { $('dt').value = hojeIso(0); buscar(); });
+$('btnAmanha').addEventListener('click', () => { $('dt').value = hojeIso(1); buscar(); });
+
+(function esperaGoogle() {
+  if (window.google && google.accounts && google.accounts.oauth2) boot();
+  else setTimeout(esperaGoogle, 150);
+})();
+</script>
+</body>
+</html>
