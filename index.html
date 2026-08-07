@@ -219,9 +219,9 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
   </div>
 
   <div class="nav" id="nav">
-    <button data-v="agenda">Agenda</button>
     <button data-v="proposta">Gerar proposta</button>
     <button data-v="minuta">Minuta de propostas</button>
+    <button data-v="agenda">Agenda</button>
     <button data-v="produtos">Produtos<span class="badge" id="badgeProd"></span></button>
   </div>
 
@@ -281,6 +281,17 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
       <button class="btn-ghost" id="btnLimpar">Limpar tudo</button>
       <button class="btn-go" id="btnSalvar">Salvar na planilha</button>
     </div>
+
+    <div class="panel">
+      <h2>Consultar produtos <span class="hint" id="qtdProdutos2"></span>
+        <div class="spacer" style="flex:1"></div>
+        <span class="hint">clique numa linha para usar o código</span>
+      </h2>
+      <div class="body" style="padding-bottom:0">
+        <input type="text" id="buscaProd2" placeholder="Buscar por código, descrição, marca ou modelo…" style="width:100%;border-radius:10px">
+      </div>
+      <div id="listaProd2"><div class="empty">Carregando…</div></div>
+    </div>
   </div>
 
   <!-- ============ MINUTA ============ -->
@@ -331,7 +342,7 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
     <div class="cards" id="prodCards"></div>
     <div id="prodmsg"></div>
     <div class="panel">
-      <h2>Cadastrar produto <span class="hint">acrescentado no fim da aba de produtos</span>
+      <h2 id="tituloForm">Cadastrar produto <span class="hint" id="hintForm">acrescentado no fim da aba de produtos</span>
         <div class="spacer" style="flex:1"></div>
         <button class="btn-ghost btn-mini" id="btnToggleForm">Abrir formulário</button>
       </h2>
@@ -350,6 +361,7 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
         <div style="margin-top:16px;display:flex;gap:9px;align-items:center;flex-wrap:wrap">
           <span class="muted" id="previewProduto" style="font-size:12.5px">Preencha o custo para ver o preço com margem.</span>
           <div class="spacer" style="flex:1"></div>
+          <button class="btn-ghost hide" id="btnCancelarEdicao">Cancelar edição</button>
           <button class="btn-ghost" id="btnLimparProduto">Limpar</button>
           <button class="btn-go" id="btnSalvarProduto">Salvar produto</button>
         </div>
@@ -380,6 +392,7 @@ let HDR2 = [], IDX2 = {}, LINHA_HDR2 = 0;
 let PLANILHA = null, PRODUTOS = [], GRUPOS = [], DATA_SEL = '';
 let ITENS = [], seq = 0, ABERTOS = new Set();
 let COT_ATENCAO = 30, COT_VENCIDA = 60;
+let SHEETID1 = null, SHEETID2 = null, EDITANDO = null;
 
 const $ = id => document.getElementById(id);
 const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -403,6 +416,7 @@ function mostrarView(v) {
   [...$('nav').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
   if ((v === 'proposta' || v === 'produtos') && !PRODUTOS.length) carregarProdutos();
   if (v === 'minuta') renderMinuta();
+  if (v === 'agenda' && !GRUPOS.length) buscar();
 }
 $('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) mostrarView(b.dataset.v); });
 
@@ -505,10 +519,11 @@ async function api(url, opts) {
 const rangeUrl = (aba, a1) => `https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}/values/${encodeURIComponent("'" + aba + "'!" + a1)}`;
 
 async function nomesAbas() {
-  if (ABA1 && ABA2) return;
-  const meta = await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}?fields=sheets.properties.title`);
-  ABA1 = meta.sheets[0].properties.title;
-  ABA2 = (meta.sheets[1] || meta.sheets[0]).properties.title;
+  if (ABA1 && ABA2 && SHEETID1 !== null) return;
+  const meta = await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}?fields=sheets.properties`);
+  const p0 = meta.sheets[0].properties, p1 = (meta.sheets[1] || meta.sheets[0]).properties;
+  ABA1 = p0.title; SHEETID1 = p0.sheetId;
+  ABA2 = p1.title; SHEETID2 = p1.sheetId;
 }
 async function carregarPlanilha() {
   await nomesAbas();
@@ -552,7 +567,8 @@ async function carregarProdutos() {
     LINHA_HDR2 = hi + 1;
     HDR2 = rows[hi].map(limpar);
     IDX2 = {}; HDR2.forEach((c,i) => IDX2[c] = i);
-    PRODUTOS = rows.slice(hi+1).map(r => ({
+    PRODUTOS = rows.slice(hi+1).map((r, i) => ({
+      linha: hi + 2 + i,
       sku: limpar(r[IDX2['Cód. Produto (SKU)']]),
       descricao: limpar(r[IDX2['Descrição do Produto']]),
       marca: limpar(r[IDX2['Marca']]),
@@ -560,12 +576,15 @@ async function carregarProdutos() {
       fornecedor: limpar(r[IDX2['Fornecedor']]),
       custo: moeda(r[IDX2['Custo Unit. (R$)']]),
       dtCotacao: normalizaData(r[IDX2['Data da Cotação']]),
-      origem: limpar(r[IDX2['Origem do Preço']])
+      origem: limpar(r[IDX2['Origem do Preço']]),
+      obs: limpar(r[IDX2['Observações']])
     })).filter(p => p.sku);
-    $('qtdProdutos').textContent = PRODUTOS.length + ' produtos na aba "' + ABA2 + '"';
+    const txt = PRODUTOS.length + ' produtos na aba "' + ABA2 + '"';
+    $('qtdProdutos').textContent = txt; $('qtdProdutos2').textContent = txt;
     $('dlSkus').innerHTML = PRODUTOS.map(p => `<option value="${esc(p.sku)}">${esc(p.descricao.slice(0,70))}</option>`).join('');
     renderCardsProdutos();
     renderListaProd($('buscaProd').value);
+    renderListaProd($('buscaProd2').value, true);
     if (!ITENS.length) addItem(); else renderItens();
   } catch (e) {
     $('qtdProdutos').textContent = '';
@@ -751,6 +770,7 @@ async function renderMinuta(forcar) {
         </div>
         <div class="metrica"><span>Itens</span><b>${g.itens}</b></div>
         <div class="metrica"><span>Soma limites</span><b style="color:var(--ok)">${fmtBRL(g.limite)}</b></div>
+        <button class="btn-x" data-del="${esc(g.chave)}" title="Apagar este pregão da planilha">apagar</button>
       </div>
       <div class="acc-body">
         <table><thead><tr>
@@ -764,11 +784,41 @@ async function renderMinuta(forcar) {
 }
 $('minutaLista').addEventListener('click', e => {
   if (e.target.closest('a')) return;
+  const del = e.target.closest('button[data-del]');
+  if (del) { e.stopPropagation(); apagarPregao(del.dataset.del); return; }
   const head = e.target.closest('.acc-head'); if (!head) return;
   const acc = head.closest('.acc'), k = acc.dataset.k;
   acc.classList.toggle('aberto');
   if (acc.classList.contains('aberto')) ABERTOS.add(k); else ABERTOS.delete(k);
 });
+
+async function apagarPregao(chave) {
+  const g = agrupar(PLANILHA.filter(i => i.pregao)).find(x => x.chave === chave);
+  if (!g) return;
+  const linhas = g.lista.map(i => i.linha).sort((a,b) => b - a);
+  const resumo = g.lista.slice().sort((a,b) => (parseInt(a.itemNum)||0) - (parseInt(b.itemNum)||0))
+    .map(i => `• Item ${i.itemNum || '?'} — ${i.sku || 's/ SKU'}`).join('\n');
+  const ok = confirm(
+    `Apagar da planilha este pregão?\n\n${g.orgao}\nPregão ${g.pregao} · UASG ${g.uasg || '—'} · ${g.data}\n\n` +
+    `${linhas.length} linha(s) serão excluídas:\n${resumo}\n\n` +
+    `Esta ação não pode ser desfeita pelo painel. Eventos já criados na agenda NÃO são apagados.`);
+  if (!ok) return;
+  if (!confirm(`Confirmando: excluir ${linhas.length} linha(s) da aba "${ABA1}"?`)) return;
+
+  setMMsg(`Excluindo ${linhas.length} linha(s)…`);
+  try {
+    await nomesAbas();
+    const requests = linhas.map(n => ({
+      deleteDimension: { range: { sheetId: SHEETID1, dimension: 'ROWS', startIndex: n - 1, endIndex: n } }
+    }));
+    await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}:batchUpdate`, {
+      method: 'POST', body: JSON.stringify({ requests })
+    });
+    ABERTOS.delete(chave);
+    await renderMinuta(true);
+    setMMsg(`${linhas.length} linha(s) excluída(s). <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
+  } catch (e) { setMMsg('Não consegui excluir: ' + esc(e.message), 'err'); }
+}
 $('buscaMinuta').addEventListener('input', () => renderMinuta());
 $('filtroMinuta').addEventListener('change', () => renderMinuta());
 $('btnRecarregarMinuta').addEventListener('click', () => renderMinuta(true));
@@ -922,27 +972,77 @@ async function salvarProposta() {
 $('btnSalvar').addEventListener('click', salvarProposta);
 
 /* ---------- produtos ---------- */
-function renderListaProd(filtro) {
+function renderListaProd(filtro, naProposta) {
+  const alvo = naProposta ? 'listaProd2' : 'listaProd';
   const f = limpar(filtro || '').toUpperCase();
-  const modo = $('filtroProd').value;
   let base = PRODUTOS;
-  if (modo === 'vencida') base = base.filter(p => statusCotacao(p).nivel === 'vencida');
-  else if (modo === 'atencao') base = base.filter(p => ['vencida','atencao'].includes(statusCotacao(p).nivel));
-  else if (modo === 'sem') base = base.filter(p => statusCotacao(p).nivel === 'sem');
+  if (!naProposta) {
+    const modo = $('filtroProd').value;
+    if (modo === 'vencida') base = base.filter(p => statusCotacao(p).nivel === 'vencida');
+    else if (modo === 'atencao') base = base.filter(p => ['vencida','atencao'].includes(statusCotacao(p).nivel));
+    else if (modo === 'sem') base = base.filter(p => statusCotacao(p).nivel === 'sem');
+  }
   if (f) base = base.filter(p => (p.sku + ' ' + p.descricao + ' ' + p.marca + ' ' + p.modelo).toUpperCase().includes(f));
   base = base.slice().sort((a,b) => (diasCotacao(b) ?? -1) - (diasCotacao(a) ?? -1));
-  const lista = base.slice(0, 60);
-  if (!lista.length) { $('listaProd').innerHTML = '<div class="empty">Nenhum produto encontrado com esse filtro.</div>'; return; }
-  $('listaProd').innerHTML = `<table><thead><tr><th>Código</th><th>Descrição</th><th>Marca</th><th>Modelo</th>
-    <th class="num">Custo</th><th class="num">+${MARGEM_PADRAO}%</th><th>Cotação</th><th>Validade</th></tr></thead><tbody>
+  const lista = base.slice(0, naProposta ? 25 : 60);
+  if (!lista.length) { $(alvo).innerHTML = '<div class="empty">Nenhum produto encontrado com esse filtro.</div>'; return; }
+  $(alvo).innerHTML = `<table><thead><tr><th>Código</th><th>Descrição</th><th>Marca</th><th>Modelo</th>
+    <th class="num">Custo</th><th class="num">+${MARGEM_PADRAO}%</th><th>Cotação</th><th>Validade</th>${naProposta ? '' : '<th></th>'}</tr></thead><tbody>
     ${lista.map(p => { const s = statusCotacao(p);
-      return `<tr><td class="org">${esc(p.sku)}</td><td>${esc(p.descricao)}</td><td>${esc(p.marca)}</td><td>${esc(p.modelo)}</td>
+      return `<tr data-sku="${esc(p.sku)}" data-linha="${p.linha}"${naProposta ? ' style="cursor:pointer"' : ''}>
+      <td class="org">${esc(p.sku)}</td><td>${esc(p.descricao)}</td><td>${esc(p.marca)}</td><td>${esc(p.modelo)}</td>
       <td class="num">${fmtBRL(p.custo)}</td><td class="num" style="color:var(--ok)">${fmtBRL(p.custo * (1 + MARGEM_PADRAO/100))}</td>
       <td>${esc(p.dtCotacao) || '<span class="muted">—</span>'}</td>
-      <td><span class="cot ${s.nivel}">${s.dias === null ? 'sem data' : s.dias + ' dias'}</span></td></tr>`; }).join('')}
+      <td><span class="cot ${s.nivel}">${s.dias === null ? 'sem data' : s.dias + ' dias'}</span></td>
+      ${naProposta ? '' : `<td class="num"><button class="btn-x" data-edit="${p.linha}">editar</button></td>`}</tr>`; }).join('')}
     </tbody></table>${base.length > lista.length ? `<div class="empty" style="padding:14px">mostrando ${lista.length} de ${base.length} — use a busca</div>` : ''}`;
 }
 $('buscaProd').addEventListener('input', e => renderListaProd(e.target.value));
+$('buscaProd2').addEventListener('input', e => renderListaProd(e.target.value, true));
+
+/* clique na lista dentro de Gerar proposta → joga o código no primeiro item vazio */
+$('listaProd2').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-sku]'); if (!tr) return;
+  const sku = tr.dataset.sku;
+  let alvo = ITENS.find(i => !i.sku);
+  if (!alvo) { addItem(); alvo = ITENS[ITENS.length - 1]; }
+  alvo.sku = sku; alvo.prod = acharProduto(sku);
+  renderItens();
+  document.querySelector(`.itemrow[data-id="${alvo.id}"]`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+/* editar produto existente */
+$('listaProd').addEventListener('click', e => {
+  const b = e.target.closest('button[data-edit]'); if (!b) return;
+  const p = PRODUTOS.find(x => x.linha === Number(b.dataset.edit)); if (!p) return;
+  EDITANDO = p;
+  $('formProduto').classList.remove('hide');
+  $('btnToggleForm').textContent = 'Fechar formulário';
+  $('tituloForm').firstChild.textContent = 'Editar produto ';
+  $('hintForm').textContent = `linha ${p.linha} da aba "${ABA2}"`;
+  $('btnSalvarProduto').textContent = 'Salvar alterações';
+  $('btnCancelarEdicao').classList.remove('hide');
+  $('n_sku').value = p.sku; $('n_desc').value = p.descricao; $('n_marca').value = p.marca;
+  $('n_modelo').value = p.modelo; $('n_forn').value = p.fornecedor;
+  $('n_custo').value = numBR(p.custo); $('n_dtcot').value = p.dtCotacao ? brParaIso(p.dtCotacao) : '';
+  $('n_origem').value = p.origem; $('n_obs').value = p.obs || '';
+  $('n_custo').dispatchEvent(new Event('input'));
+  setProdMsg('');
+  $('formProduto').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+function sairEdicao() {
+  EDITANDO = null;
+  $('tituloForm').firstChild.textContent = 'Cadastrar produto ';
+  $('hintForm').textContent = 'acrescentado no fim da aba de produtos';
+  $('btnSalvarProduto').textContent = 'Salvar produto';
+  $('btnCancelarEdicao').classList.add('hide');
+}
+$('btnCancelarEdicao').addEventListener('click', () => {
+  sairEdicao();
+  ['n_sku','n_desc','n_marca','n_modelo','n_forn','n_custo','n_origem','n_obs'].forEach(id => $(id).value = '');
+  $('n_dtcot').value = hojeIso(0);
+  setProdMsg('');
+});
 $('btnToggleForm').addEventListener('click', () => {
   const f = $('formProduto'), abrir = f.classList.contains('hide');
   f.classList.toggle('hide', !abrir);
@@ -968,12 +1068,12 @@ async function salvarProduto() {
     dtcot: $('n_dtcot').value, origem: $('n_origem').value.trim(), obs: $('n_obs').value.trim()
   };
   if (!p.sku || !p.desc || !p.custo) { setProdMsg('Código, descrição e custo são obrigatórios.', 'warn'); return; }
-  if (acharProduto(p.sku)) {
-    const ex = acharProduto(p.sku);
-    if (!confirm(`Já existe um produto com o código ${p.sku}:\n\n${ex.descricao}\nCusto ${fmtBRL(ex.custo)}\n\nGravar assim mesmo? A busca por código passará a ter duas opções.`)) return;
+  const dup = acharProduto(p.sku);
+  if (dup && (!EDITANDO || dup.linha !== EDITANDO.linha)) {
+    if (!confirm(`Já existe um produto com o código ${p.sku}:\n\n${dup.descricao}\nCusto ${fmtBRL(dup.custo)}\n\nGravar assim mesmo? A busca por código passará a ter duas opções.`)) return;
   }
   $('btnSalvarProduto').disabled = true;
-  setProdMsg('Gravando na aba "' + esc(ABA2) + '"…');
+  setProdMsg((EDITANDO ? 'Atualizando a linha ' + EDITANDO.linha : 'Gravando') + ' na aba "' + esc(ABA2) + '"…');
   try {
     if (!HDR2.length) await carregarProdutos();
     const row = new Array(HDR2.length).fill('');
@@ -987,14 +1087,25 @@ async function salvarProduto() {
     set('Data da Cotação', p.dtcot ? isoParaBR(p.dtcot) : '');
     set('Origem do Preço', p.origem);
     set('Observações', p.obs);
-    await api(rangeUrl(ABA2, `A${LINHA_HDR2}:${colLetra(HDR2.length-1)}`)
-      + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
-      { method: 'POST', body: JSON.stringify({ values: [row] }) });
-    await carregarProdutos();
-    setProdMsg(`Produto <strong>${esc(p.sku)}</strong> cadastrado. Já pode ser usado em Gerar proposta. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
-    ['n_sku','n_desc','n_marca','n_modelo','n_custo','n_obs'].forEach(id => $(id).value = '');
-    $('previewProduto').textContent = 'Preencha o custo para ver o preço com margem.';
-    $('n_sku').focus();
+
+    if (EDITANDO) {
+      await api(rangeUrl(ABA2, `A${EDITANDO.linha}:${colLetra(HDR2.length-1)}${EDITANDO.linha}`)
+        + '?valueInputOption=USER_ENTERED',
+        { method: 'PUT', body: JSON.stringify({ values: [row] }) });
+      const linhaEditada = EDITANDO.linha;
+      sairEdicao();
+      await carregarProdutos();
+      setProdMsg(`Produto <strong>${esc(p.sku)}</strong> atualizado (linha ${linhaEditada}). <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
+    } else {
+      await api(rangeUrl(ABA2, `A${LINHA_HDR2}:${colLetra(HDR2.length-1)}`)
+        + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+        { method: 'POST', body: JSON.stringify({ values: [row] }) });
+      await carregarProdutos();
+      setProdMsg(`Produto <strong>${esc(p.sku)}</strong> cadastrado. Já pode ser usado em Gerar proposta. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
+      ['n_sku','n_desc','n_marca','n_modelo','n_custo','n_obs'].forEach(id => $(id).value = '');
+      $('previewProduto').textContent = 'Preencha o custo para ver o preço com margem.';
+      $('n_sku').focus();
+    }
   } catch (e) { setProdMsg('Não consegui gravar: ' + esc(e.message), 'err'); }
   finally { $('btnSalvarProduto').disabled = false; }
 }
@@ -1005,10 +1116,9 @@ function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prom
 async function aposLogin() {
   $('setup').classList.add('hide');
   $('app').classList.remove('hide');
-  mostrarView('agenda');
-  try { const u = await api('https://www.googleapis.com/oauth2/v3/userinfo'); $('conta').textContent = u.email || ''; } catch (e) {}
   $('dt').value = hojeIso(1);
-  buscar();
+  mostrarView('proposta');
+  try { const u = await api('https://www.googleapis.com/oauth2/v3/userinfo'); $('conta').textContent = u.email || ''; } catch (e) {}
 }
 function iniciarCliente(clientId) {
   try {
