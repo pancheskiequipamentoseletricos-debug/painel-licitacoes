@@ -14,7 +14,7 @@ html[data-theme="paymark"] {
           radial-gradient(1100px 620px at 50% 6%, rgba(168,116,74,.22), transparent 66%),
           radial-gradient(700px 420px at 12% 34%, rgba(120,74,58,.13), transparent 70%);
   --grid: rgba(255,255,255,.028);
-  --surface: rgba(255,255,255,.045); --surface-2: rgba(255,255,255,.028);
+  --surface: rgba(255,255,255,.045); --surface-2: rgba(255,255,255,.028); --surface-3: rgba(255,255,255,.02);
   --border: rgba(255,255,255,.10); --border-soft: rgba(255,255,255,.055);
   --text: #f6f3f0; --text-2: #d6cfc8; --muted: #96908a;
   --btn-bg: linear-gradient(180deg,#fbf7f2 0%,#d8cec2 100%); --btn-fg: #17120f;
@@ -24,12 +24,12 @@ html[data-theme="paymark"] {
   --pend: #e8b878; --pend-bg: rgba(214,150,72,.15);
   --err: #f0938a; --err-bg: rgba(214,88,74,.15);
   --skip: #9b948e; --skip-bg: rgba(255,255,255,.06);
-  --link: #d9b48d;
+  --link: #d9b48d; --hover: rgba(255,255,255,.035);
 }
 html[data-theme="escuro"] {
   color-scheme: dark;
   --bg: #121316; --glow: none; --grid: rgba(255,255,255,.022);
-  --surface: #1a1c20; --surface-2: #16181b; --border: #2b2e34; --border-soft: #232629;
+  --surface: #1a1c20; --surface-2: #16181b; --surface-3: #141619; --border: #2b2e34; --border-soft: #232629;
   --text: #eceef1; --text-2: #c8ccd2; --muted: #878d96;
   --btn-bg: #eceef1; --btn-fg: #16181b; --btn-shadow: none;
   --ghost-bg: #22252a; --ghost-fg: #eceef1; --field-bg: #1e2126;
@@ -37,12 +37,12 @@ html[data-theme="escuro"] {
   --pend: #e5b26b; --pend-bg: rgba(210,145,60,.16);
   --err: #ef8e85; --err-bg: rgba(212,80,68,.16);
   --skip: #8a9099; --skip-bg: rgba(255,255,255,.06);
-  --link: #7fb6f0;
+  --link: #7fb6f0; --hover: rgba(255,255,255,.03);
 }
 html[data-theme="claro"] {
   color-scheme: light;
   --bg: #f7f7f5; --glow: none; --grid: rgba(0,0,0,.018);
-  --surface: #ffffff; --surface-2: #fbfbf9; --border: #e6e4de; --border-soft: #efede8;
+  --surface: #ffffff; --surface-2: #fbfbf9; --surface-3: #f5f4f1; --border: #e6e4de; --border-soft: #efede8;
   --text: #1a1a19; --text-2: #45443f; --muted: #85827b;
   --btn-bg: #1a1a19; --btn-fg: #ffffff; --btn-shadow: none;
   --ghost-bg: #ffffff; --ghost-fg: #1a1a19; --field-bg: #ffffff;
@@ -50,7 +50,7 @@ html[data-theme="claro"] {
   --pend: #96530a; --pend-bg: #fdf0dd;
   --err: #a33228; --err-bg: #fbe6e4;
   --skip: #78766f; --skip-bg: #f0eeea;
-  --link: #1f5fa8;
+  --link: #1f5fa8; --hover: #faf9f7;
 }
 
 * { box-sizing: border-box; }
@@ -68,7 +68,7 @@ body::after {
   mask-image: radial-gradient(900px 600px at 50% 0%, #000 20%, transparent 78%);
   -webkit-mask-image: radial-gradient(900px 600px at 50% 0%, #000 20%, transparent 78%);
 }
-.wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; }
+.wrap { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; }
 
 .top { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; }
@@ -79,9 +79,18 @@ body::after {
 .themes button[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--btn-shadow); }
 .who { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 
-.nav { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-soft); margin-bottom: 22px; width: fit-content; }
+.nav { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-soft); margin-bottom: 22px; width: fit-content; flex-wrap: wrap; }
 .nav button { border: none; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 570; padding: 8px 20px; border-radius: 999px; cursor: pointer; }
 .nav button[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--btn-shadow); }
+.badge { display: none; margin-left: 7px; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--err-bg); color: var(--err); vertical-align: 1px; }
+.badge.on { display: inline-block; }
+.cot { display: inline-block; font-size: 10.5px; font-weight: 640; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.cot.ok { background: var(--ok-bg); color: var(--ok); }
+.cot.atencao { background: var(--pend-bg); color: var(--pend); }
+.cot.vencida { background: var(--err-bg); color: var(--err); }
+.cot.sem { background: var(--skip-bg); color: var(--skip); }
+.cfg { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.cfg input { width: 68px; text-align: center; border-radius: 999px; padding: 6px 8px; }
 
 h1 { font-size: 30px; line-height: 1.14; margin: 0 0 8px; font-weight: 600; letter-spacing: -0.025em; }
 h1 span { color: var(--muted); }
@@ -89,8 +98,8 @@ h1 span { color: var(--muted); }
 
 .bar { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 9px 10px 9px 18px; margin-bottom: 20px; backdrop-filter: blur(10px); }
 .bar label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-right: 4px; }
-input, select { font: inherit; padding: 8px 12px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--field-bg); color: var(--text); }
-input:focus, select:focus { outline: none; border-color: var(--muted); }
+input, select, textarea { font: inherit; padding: 8px 12px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--field-bg); color: var(--text); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--muted); }
 button { font: inherit; font-weight: 550; padding: 9px 17px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; transition: opacity .12s, transform .06s; }
 button:active:not(:disabled) { transform: translateY(1px); }
 button:disabled { opacity: .4; cursor: not-allowed; }
@@ -105,10 +114,11 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px; backdrop-filter: blur(10px); }
 .card .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 620; }
 .card .val { font-size: 31px; font-weight: 620; margin-top: 6px; letter-spacing: -0.03em; line-height: 1; }
+.card .val.sm { font-size: 22px; }
 .card.ok .val { color: var(--ok); } .card.pend .val { color: var(--pend); }
 
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 20px; backdrop-filter: blur(10px); }
-.panel h2 { font-size: 12.5px; font-weight: 620; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px; }
+.panel h2 { font-size: 12.5px; font-weight: 620; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .panel h2 .hint { font-weight: 450; color: var(--muted); text-transform: none; letter-spacing: 0; font-size: 11.5px; }
 .body { padding: 18px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -136,8 +146,8 @@ a { color: var(--link); text-decoration: none; } a:hover { text-decoration: unde
 .grid { display: grid; gap: 14px; }
 .g5 { grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); }
 .fld label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 620; margin-bottom: 6px; }
-.fld input { width: 100%; border-radius: 10px; }
-.fld input[readonly] { opacity: .72; cursor: default; }
+.fld input, .fld textarea { width: 100%; border-radius: 10px; }
+.fld textarea { min-height: 62px; resize: vertical; }
 .itemrow { border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: var(--surface-2); }
 .itemhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .itemhead b { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
@@ -145,6 +155,25 @@ a { color: var(--link); text-decoration: none; } a:hover { text-decoration: unde
 .calc div span { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; display: block; }
 .calc div b { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 .calc .destaque b { color: var(--ok); font-size: 15px; }
+
+/* minuta / acordeão */
+.acc { border-bottom: 1px solid var(--border-soft); }
+.acc:last-child { border-bottom: none; }
+.acc-head { display: flex; align-items: center; gap: 12px; padding: 13px 18px; cursor: pointer; }
+.acc-head:hover { background: var(--hover); }
+.acc-head .chev { flex: none; width: 14px; color: var(--muted); transition: transform .15s; font-size: 11px; }
+.acc.aberto .chev { transform: rotate(90deg); }
+.acc-head .titulo { flex: 1; min-width: 200px; }
+.acc-head .titulo b { display: block; font-weight: 570; color: var(--text); font-size: 13.5px; }
+.acc-head .titulo small { color: var(--muted); font-size: 11.5px; }
+.acc-head .metrica { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.acc-head .metrica span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.acc-head .metrica b { font-weight: 600; font-size: 13px; }
+.acc-body { display: none; background: var(--surface-3); border-top: 1px solid var(--border-soft); padding: 4px 0; }
+.acc.aberto .acc-body { display: block; }
+.acc-body table { font-size: 12.5px; }
+.acc-body th { padding: 8px 18px; }
+.acc-body td { padding: 9px 18px; }
 
 #setup { max-width: 640px; margin: 50px auto; }
 #setup p { color: var(--text-2); margin: 0 0 14px; }
@@ -192,13 +221,14 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
   <div class="nav" id="nav">
     <button data-v="agenda">Agenda</button>
     <button data-v="proposta">Gerar proposta</button>
+    <button data-v="minuta">Minuta de propostas</button>
+    <button data-v="produtos">Produtos<span class="badge" id="badgeProd"></span></button>
   </div>
 
-  <!-- ============ VIEW AGENDA ============ -->
+  <!-- ============ AGENDA ============ -->
   <div id="v-agenda">
     <h1>Controle de disputas<br><span>fase de lances</span></h1>
     <div class="sub">Planilha <strong>Controle de Licitações_Fase de Lances</strong> · eventos no Google Agenda</div>
-
     <div class="bar">
       <label for="dt">Data da disputa</label>
       <input type="date" id="dt">
@@ -208,15 +238,12 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
       <div class="spacer"></div>
       <button class="btn-go" id="btnLancar" disabled>Lançar na agenda</button>
     </div>
-
     <div id="msg"></div>
     <div class="cards" id="cards"></div>
-
     <div class="panel">
       <h2 id="tituloTabela">Pregões da data</h2>
       <div id="tabela"><div class="empty">Escolha uma data e clique em Buscar.</div></div>
     </div>
-
     <div class="panel">
       <h2>Total cadastrado na planilha</h2>
       <div id="geral"><div class="empty">—</div></div>
@@ -224,13 +251,11 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
     <div class="foot" id="foot"></div>
   </div>
 
-  <!-- ============ VIEW PROPOSTA ============ -->
+  <!-- ============ GERAR PROPOSTA ============ -->
   <div id="v-proposta" class="hide">
     <h1>Gerar proposta<br><span>novo pregão na planilha</span></h1>
     <div class="sub">As linhas são acrescentadas no fim da primeira aba. Nada acima é alterado.</div>
-
     <div id="pmsg"></div>
-
     <div class="panel">
       <h2>Dados do pregão <span class="hint">preenchidos uma vez, repetidos em todos os itens</span></h2>
       <div class="body">
@@ -243,7 +268,6 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
         </div>
       </div>
     </div>
-
     <div class="panel">
       <h2>Itens <span class="hint">digite o código e o resto vem da aba de produtos</span></h2>
       <div class="body">
@@ -251,20 +275,92 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
         <button class="btn-ghost" id="btnAddItem">+ Adicionar item</button>
       </div>
     </div>
-
     <div class="bar">
       <span class="muted" id="resumoProposta" style="font-size:12.5px">Nenhum item preenchido.</span>
       <div class="spacer"></div>
       <button class="btn-ghost" id="btnLimpar">Limpar tudo</button>
       <button class="btn-go" id="btnSalvar">Salvar na planilha</button>
     </div>
+  </div>
 
+  <!-- ============ MINUTA ============ -->
+  <div id="v-minuta" class="hide">
+    <h1>Minuta de propostas<br><span>tudo que já foi salvo</span></h1>
+    <div class="sub">Clique num pregão para ver os itens.</div>
+    <div class="bar">
+      <input type="text" id="buscaMinuta" placeholder="Buscar por órgão, nº do pregão ou UASG…" style="flex:1;min-width:220px;border-radius:999px">
+      <select id="filtroMinuta" style="border-radius:999px">
+        <option value="todos">Todas as datas</option>
+        <option value="futuros">De hoje em diante</option>
+        <option value="passados">Anteriores a hoje</option>
+      </select>
+      <button class="btn-ghost" id="btnRecarregarMinuta">Recarregar</button>
+      <div class="spacer"></div>
+      <button class="btn-ghost btn-mini" id="btnExpandir">Expandir tudo</button>
+    </div>
+    <div id="mmsg"></div>
+    <div class="cards" id="minutaCards"></div>
+    <div class="panel">
+      <h2>Pregões salvos <span class="hint" id="minutaHint"></span></h2>
+      <div id="minutaLista"><div class="empty">Carregando…</div></div>
+    </div>
+  </div>
+
+  <!-- ============ PRODUTOS ============ -->
+  <div id="v-produtos" class="hide">
+    <h1>Produtos<br><span>base de custos</span></h1>
+    <div class="sub">Mesma estrutura da segunda aba da planilha.</div>
+
+    <div class="bar">
+      <div class="cfg">
+        <span>Alertar cotação a partir de</span>
+        <input type="number" id="cfgAtencao" min="1" max="999">
+        <span>dias · vencida a partir de</span>
+        <input type="number" id="cfgVencida" min="1" max="999">
+        <span>dias</span>
+      </div>
+      <div class="spacer"></div>
+      <select id="filtroProd" style="border-radius:999px">
+        <option value="todos">Todos os produtos</option>
+        <option value="vencida">Só cotações vencidas</option>
+        <option value="atencao">Vencidas + em atenção</option>
+        <option value="sem">Sem data de cotação</option>
+      </select>
+    </div>
+
+    <div class="cards" id="prodCards"></div>
+    <div id="prodmsg"></div>
+    <div class="panel">
+      <h2>Cadastrar produto <span class="hint">acrescentado no fim da aba de produtos</span>
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn-ghost btn-mini" id="btnToggleForm">Abrir formulário</button>
+      </h2>
+      <div class="body hide" id="formProduto">
+        <div class="grid g5">
+          <div class="fld"><label for="n_sku">Cód. Produto (SKU)</label><input type="text" id="n_sku" placeholder="84044" spellcheck="false"></div>
+          <div class="fld" style="grid-column:2/-1"><label for="n_desc">Descrição do Produto</label><input type="text" id="n_desc" placeholder="SMART TV HQ 32&quot; HD..."></div>
+          <div class="fld"><label for="n_marca">Marca</label><input type="text" id="n_marca" placeholder="HQ"></div>
+          <div class="fld"><label for="n_modelo">Modelo</label><input type="text" id="n_modelo" placeholder="HQS32NKHM"></div>
+          <div class="fld"><label for="n_forn">Fornecedor</label><input type="text" id="n_forn" placeholder="HQ"></div>
+          <div class="fld"><label for="n_custo">Custo Unit. (R$)</label><input type="text" id="n_custo" placeholder="826,34"></div>
+          <div class="fld"><label for="n_dtcot">Data da Cotação</label><input type="date" id="n_dtcot"></div>
+          <div class="fld"><label for="n_origem">Origem do Preço</label><input type="text" id="n_origem" placeholder="Tabela de preço"></div>
+          <div class="fld" style="grid-column:1/-1"><label for="n_obs">Observações</label><input type="text" id="n_obs" placeholder="Tabela B2B — preço região Sul, já com IPI"></div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+          <span class="muted" id="previewProduto" style="font-size:12.5px">Preencha o custo para ver o preço com margem.</span>
+          <div class="spacer" style="flex:1"></div>
+          <button class="btn-ghost" id="btnLimparProduto">Limpar</button>
+          <button class="btn-go" id="btnSalvarProduto">Salvar produto</button>
+        </div>
+      </div>
+    </div>
     <div class="panel">
       <h2>Produtos disponíveis <span class="hint" id="qtdProdutos"></span></h2>
       <div class="body">
         <input type="text" id="buscaProd" placeholder="Buscar por código, descrição ou marca…" style="width:100%;border-radius:10px">
-        <div id="listaProd" style="margin-top:12px"></div>
       </div>
+      <div id="listaProd"><div class="empty">Carregando…</div></div>
     </div>
   </div>
 </div>
@@ -280,9 +376,10 @@ const MARGEM_PADRAO = 30;
 
 let TOKEN = null, TOKEN_CLIENT = null;
 let ABA1 = '', ABA2 = '', HDR1 = [], IDX1 = {}, LINHA_HDR1 = 0;
+let HDR2 = [], IDX2 = {}, LINHA_HDR2 = 0;
 let PLANILHA = null, PRODUTOS = [], GRUPOS = [], DATA_SEL = '';
-let ITENS = [];
-let seq = 0;
+let ITENS = [], seq = 0, ABERTOS = new Set();
+let COT_ATENCAO = 30, COT_VENCIDA = 60;
 
 const $ = id => document.getElementById(id);
 const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -302,10 +399,10 @@ document.querySelectorAll('.themes').forEach(box => box.addEventListener('click'
 aplicarTema(ls.get('painel-lic-tema') || 'paymark');
 
 function mostrarView(v) {
-  $('v-agenda').classList.toggle('hide', v !== 'agenda');
-  $('v-proposta').classList.toggle('hide', v !== 'proposta');
+  ['agenda','proposta','minuta','produtos'].forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
   [...$('nav').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
-  if (v === 'proposta' && !PRODUTOS.length) carregarProdutos();
+  if ((v === 'proposta' || v === 'produtos') && !PRODUTOS.length) carregarProdutos();
+  if (v === 'minuta') renderMinuta();
 }
 $('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) mostrarView(b.dataset.v); });
 
@@ -342,6 +439,60 @@ function normalizaData(v) {
 }
 function colLetra(i) { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
 
+/* ---------- validade da cotação ---------- */
+function diasCotacao(p) {
+  const iso = p && p.dtCotacao ? brParaIso(p.dtCotacao) : '';
+  if (!iso) return null;
+  const d = new Date(iso + 'T12:00:00');
+  if (isNaN(d)) return null;
+  const hoje = new Date(); hoje.setHours(12,0,0,0);
+  return Math.round((hoje - d) / 86400000);
+}
+function statusCotacao(p) {
+  const d = diasCotacao(p);
+  if (d === null) return { nivel: 'sem', dias: null, texto: 'sem data de cotação' };
+  if (d >= COT_VENCIDA) return { nivel: 'vencida', dias: d, texto: `cotação de ${d} dias — vencida` };
+  if (d >= COT_ATENCAO) return { nivel: 'atencao', dias: d, texto: `cotação de ${d} dias` };
+  return { nivel: 'ok', dias: d, texto: `cotação de ${d} dia${d === 1 ? '' : 's'}` };
+}
+function carregarCfgCotacao() {
+  COT_ATENCAO = Number(ls.get('painel-lic-cot-atencao')) || 30;
+  COT_VENCIDA = Number(ls.get('painel-lic-cot-vencida')) || 60;
+  if (COT_VENCIDA <= COT_ATENCAO) COT_VENCIDA = COT_ATENCAO + 30;
+  $('cfgAtencao').value = COT_ATENCAO;
+  $('cfgVencida').value = COT_VENCIDA;
+}
+function salvarCfgCotacao() {
+  const a = Math.max(1, Number($('cfgAtencao').value) || 30);
+  let v = Math.max(1, Number($('cfgVencida').value) || 60);
+  if (v <= a) v = a + 30;
+  COT_ATENCAO = a; COT_VENCIDA = v;
+  ls.set('painel-lic-cot-atencao', a); ls.set('painel-lic-cot-vencida', v);
+  $('cfgVencida').value = v;
+  renderListaProd($('buscaProd').value); renderCardsProdutos(); renderItens();
+}
+$('cfgAtencao').addEventListener('change', salvarCfgCotacao);
+$('cfgVencida').addEventListener('change', salvarCfgCotacao);
+$('filtroProd').addEventListener('change', () => renderListaProd($('buscaProd').value));
+
+function renderCardsProdutos() {
+  if (!PRODUTOS.length) { $('prodCards').innerHTML = ''; $('badgeProd').classList.remove('on'); return; }
+  const st = PRODUTOS.map(statusCotacao);
+  const venc = st.filter(s => s.nivel === 'vencida').length;
+  const aten = st.filter(s => s.nivel === 'atencao').length;
+  const sem  = st.filter(s => s.nivel === 'sem').length;
+  $('prodCards').innerHTML = `
+    <div class="card"><div class="lbl">Produtos</div><div class="val">${PRODUTOS.length}</div></div>
+    <div class="card ok"><div class="lbl">Cotação em dia</div><div class="val">${PRODUTOS.length - venc - aten - sem}</div></div>
+    <div class="card pend"><div class="lbl">Em atenção (${COT_ATENCAO}+ dias)</div><div class="val">${aten}</div></div>
+    <div class="card"><div class="lbl">Vencidas (${COT_VENCIDA}+ dias)</div><div class="val" style="color:var(--err)">${venc}</div></div>
+    <div class="card"><div class="lbl">Sem data</div><div class="val" style="color:var(--muted)">${sem}</div></div>`;
+  const b = $('badgeProd');
+  b.textContent = venc || '';
+  b.classList.toggle('on', venc > 0);
+  b.title = venc ? `${venc} produto(s) com cotação vencida` : '';
+}
+
 /* ---------- API ---------- */
 async function api(url, opts) {
   const r = await fetch(url, Object.assign({}, opts, {
@@ -370,14 +521,24 @@ async function carregarPlanilha() {
   IDX1 = {}; HDR1.forEach((h,i) => IDX1[h] = i);
   const col = (r, nome) => limpar(r[IDX1[nome]]);
   const itens = [];
-  for (const r of rows.slice(hi+1)) {
-    if (!r || !r.length) continue;
+  rows.slice(hi+1).forEach((r, i) => {
+    if (!r || !r.length) return;
     const data = normalizaData(r[IDX1['Data da Disputa']]);
-    if (!data) continue;
+    if (!data) return;
     const orgao = col(r,'Órgão / Comprador'), pregao = col(r,'Nº do Pregão / Dispensa');
-    itens.push({ data, orgao, pregao, uasg: col(r,'UASG'), link: col(r,'Link Effecti'),
-      limite: moeda(r[IDX1['LIMITE MÁX. LANCE (R$)']]), suspenso: /SUSPENSO/i.test(orgao), semNumero: !pregao });
-  }
+    itens.push({
+      linha: hi + 2 + i, data, orgao, pregao,
+      uasg: col(r,'UASG'), link: col(r,'Link Effecti'),
+      itemNum: col(r,'Item nº'), sku: col(r,'Cód. Produto (SKU)'),
+      ref: moeda(r[IDX1['Valor de Referência']]),
+      descricao: col(r,'Descrição do Item'), marca: col(r,'Marca'), modelo: col(r,'Modelo'),
+      custo: moeda(r[IDX1['Custo Unit. (R$)']]),
+      margem: col(r,'Margem %'),
+      limite: moeda(r[IDX1['LIMITE MÁX. LANCE (R$)']]),
+      obs: col(r,'Observações'),
+      suspenso: /SUSPENSO/i.test(orgao), semNumero: !pregao
+    });
+  });
   PLANILHA = itens; return itens;
 }
 async function carregarProdutos() {
@@ -388,22 +549,27 @@ async function carregarProdutos() {
     const rows = dados.values || [];
     const hi = rows.findIndex(r => r.some(c => limpar(c).startsWith('Cód. Produto')));
     if (hi === -1) throw new Error('Cabeçalho "Cód. Produto (SKU)" não encontrado na aba "' + ABA2 + '".');
-    const h = rows[hi].map(limpar), ix = {}; h.forEach((c,i) => ix[c] = i);
+    LINHA_HDR2 = hi + 1;
+    HDR2 = rows[hi].map(limpar);
+    IDX2 = {}; HDR2.forEach((c,i) => IDX2[c] = i);
     PRODUTOS = rows.slice(hi+1).map(r => ({
-      sku: limpar(r[ix['Cód. Produto (SKU)']]),
-      descricao: limpar(r[ix['Descrição do Produto']]),
-      marca: limpar(r[ix['Marca']]),
-      modelo: limpar(r[ix['Modelo']]),
-      fornecedor: limpar(r[ix['Fornecedor']]),
-      custo: moeda(r[ix['Custo Unit. (R$)']])
+      sku: limpar(r[IDX2['Cód. Produto (SKU)']]),
+      descricao: limpar(r[IDX2['Descrição do Produto']]),
+      marca: limpar(r[IDX2['Marca']]),
+      modelo: limpar(r[IDX2['Modelo']]),
+      fornecedor: limpar(r[IDX2['Fornecedor']]),
+      custo: moeda(r[IDX2['Custo Unit. (R$)']]),
+      dtCotacao: normalizaData(r[IDX2['Data da Cotação']]),
+      origem: limpar(r[IDX2['Origem do Preço']])
     })).filter(p => p.sku);
     $('qtdProdutos').textContent = PRODUTOS.length + ' produtos na aba "' + ABA2 + '"';
     $('dlSkus').innerHTML = PRODUTOS.map(p => `<option value="${esc(p.sku)}">${esc(p.descricao.slice(0,70))}</option>`).join('');
-    renderListaProd();
-    if (!ITENS.length) addItem();
+    renderCardsProdutos();
+    renderListaProd($('buscaProd').value);
+    if (!ITENS.length) addItem(); else renderItens();
   } catch (e) {
     $('qtdProdutos').textContent = '';
-    setPMsg('Não consegui carregar os produtos: ' + esc(e.message), 'err');
+    setProdMsg('Não consegui carregar os produtos: ' + esc(e.message), 'err');
   }
 }
 function acharProduto(sku) {
@@ -438,17 +604,21 @@ function agrupar(itens) {
   const m = new Map();
   for (const it of itens) {
     const k = [it.data,it.orgao,it.pregao,it.uasg].join('§');
-    if (!m.has(k)) m.set(k, { data:it.data, orgao:it.orgao, pregao:it.pregao, uasg:it.uasg,
-      link:'', itens:0, limite:0, suspenso:it.suspenso, semNumero:it.semNumero });
-    const g = m.get(k); g.itens++; g.limite += it.limite; if (!g.link && it.link) g.link = it.link;
+    if (!m.has(k)) m.set(k, { chave: k, data: it.data, orgao: it.orgao, pregao: it.pregao, uasg: it.uasg,
+      link: '', itens: 0, limite: 0, lista: [], suspenso: it.suspenso, semNumero: it.semNumero });
+    const g = m.get(k); g.itens++; g.limite += it.limite; g.lista.push(it);
+    if (!g.link && it.link) g.link = it.link;
   }
   return [...m.values()];
 }
 
-/* ---------- render agenda ---------- */
+/* ---------- mensagens ---------- */
 const setMsg = (t,tipo) => $('msg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
 const setPMsg = (t,tipo) => $('pmsg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
+const setMMsg = (t,tipo) => $('mmsg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
+const setProdMsg = (t,tipo) => $('prodmsg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
 
+/* ---------- agenda ---------- */
 function renderCards(g) {
   const v = g.filter(x => !x.suspenso && !x.semNumero);
   const na = v.filter(x => x.jaExiste).length, pend = v.length - na;
@@ -526,25 +696,111 @@ async function lancar() {
   setMsg(`${ok} evento(s) criado(s)${falha ? `, ${falha} com erro` : ''}.`, falha ? 'err' : 'ok');
 }
 
+/* ---------- minuta ---------- */
+async function renderMinuta(forcar) {
+  if (!PLANILHA || forcar) {
+    $('minutaLista').innerHTML = '<div class="empty">Lendo a planilha…</div>';
+    try { await carregarPlanilha(); } catch (e) { setMMsg('Não consegui ler: ' + esc(e.message), 'err'); return; }
+    setMMsg('');
+  }
+  const busca = limpar($('buscaMinuta').value).toUpperCase();
+  const filtro = $('filtroMinuta').value;
+  const hojeBR = isoParaBR(hojeIso(0));
+  let grupos = agrupar(PLANILHA.filter(i => i.pregao));
+  grupos.sort((a,b) => brParaIso(b.data).localeCompare(brParaIso(a.data)) || a.orgao.localeCompare(b.orgao));
+  if (filtro === 'futuros') grupos = grupos.filter(g => brParaIso(g.data) >= brParaIso(hojeBR));
+  if (filtro === 'passados') grupos = grupos.filter(g => brParaIso(g.data) < brParaIso(hojeBR));
+  if (busca) grupos = grupos.filter(g => (g.orgao + ' ' + g.pregao + ' ' + g.uasg).toUpperCase().includes(busca));
+
+  const totItens = grupos.reduce((a,g) => a + g.itens, 0);
+  const totLimite = grupos.reduce((a,g) => a + g.limite, 0);
+  const orgaosUnicos = new Set(grupos.map(g => g.orgao)).size;
+  $('minutaCards').innerHTML = `
+    <div class="card"><div class="lbl">Pregões</div><div class="val">${grupos.length}</div></div>
+    <div class="card"><div class="lbl">Itens</div><div class="val">${totItens}</div></div>
+    <div class="card"><div class="lbl">Órgãos distintos</div><div class="val">${orgaosUnicos}</div></div>
+    <div class="card ok"><div class="lbl">Soma dos limites</div><div class="val sm">${fmtBRL(totLimite)}</div></div>`;
+  $('minutaHint').textContent = grupos.length ? grupos.length + ' resultado(s)' : '';
+
+  if (!grupos.length) { $('minutaLista').innerHTML = '<div class="empty">Nenhum pregão encontrado com esse filtro.</div>'; return; }
+
+  $('minutaLista').innerHTML = grupos.map(g => {
+    const aberto = ABERTOS.has(g.chave);
+    const susp = g.suspenso ? '<span class="tag skip">Suspenso</span>' : '';
+    const itensHtml = g.lista
+      .slice().sort((a,b) => (parseInt(a.itemNum)||0) - (parseInt(b.itemNum)||0))
+      .map(it => `<tr>
+        <td class="num">${esc(it.itemNum) || '—'}</td>
+        <td class="org">${esc(it.sku) || '—'}</td>
+        <td>${esc(it.descricao) || '<span class="muted">—</span>'}</td>
+        <td>${esc(it.marca) || '—'}</td>
+        <td>${esc(it.modelo) || '—'}</td>
+        <td class="num">${it.custo ? fmtBRL(it.custo) : '—'}</td>
+        <td class="num">${esc(it.margem) || '—'}</td>
+        <td class="num" style="color:var(--ok);font-weight:600">${it.limite ? fmtBRL(it.limite) : '—'}</td>
+        <td class="num">${it.ref ? fmtBRL(it.ref) : '<span class="muted">—</span>'}</td>
+        <td>${esc(it.obs) || '<span class="muted">—</span>'}</td>
+      </tr>`).join('');
+    return `<div class="acc ${aberto ? 'aberto' : ''}" data-k="${esc(g.chave)}">
+      <div class="acc-head">
+        <span class="chev">▶</span>
+        <div class="titulo">
+          <b>${esc(g.orgao)} ${susp}</b>
+          <small>${esc(g.data)} · Pregão ${esc(g.pregao)} · UASG ${esc(g.uasg) || '—'}
+          ${g.link ? ` · <a href="${esc(g.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Effecti</a>` : ''}</small>
+        </div>
+        <div class="metrica"><span>Itens</span><b>${g.itens}</b></div>
+        <div class="metrica"><span>Soma limites</span><b style="color:var(--ok)">${fmtBRL(g.limite)}</b></div>
+      </div>
+      <div class="acc-body">
+        <table><thead><tr>
+          <th class="num">Item</th><th>SKU</th><th>Descrição</th><th>Marca</th><th>Modelo</th>
+          <th class="num">Custo</th><th class="num">Margem</th><th class="num">Limite máx.</th>
+          <th class="num">Vlr. referência</th><th>Observações</th>
+        </tr></thead><tbody>${itensHtml}</tbody></table>
+      </div>
+    </div>`;
+  }).join('');
+}
+$('minutaLista').addEventListener('click', e => {
+  if (e.target.closest('a')) return;
+  const head = e.target.closest('.acc-head'); if (!head) return;
+  const acc = head.closest('.acc'), k = acc.dataset.k;
+  acc.classList.toggle('aberto');
+  if (acc.classList.contains('aberto')) ABERTOS.add(k); else ABERTOS.delete(k);
+});
+$('buscaMinuta').addEventListener('input', () => renderMinuta());
+$('filtroMinuta').addEventListener('change', () => renderMinuta());
+$('btnRecarregarMinuta').addEventListener('click', () => renderMinuta(true));
+$('btnExpandir').addEventListener('click', () => {
+  const accs = [...document.querySelectorAll('#minutaLista .acc')];
+  const abrirTodos = accs.some(a => !a.classList.contains('aberto'));
+  accs.forEach(a => {
+    a.classList.toggle('aberto', abrirTodos);
+    if (abrirTodos) ABERTOS.add(a.dataset.k); else ABERTOS.delete(a.dataset.k);
+  });
+  $('btnExpandir').textContent = abrirTodos ? 'Recolher tudo' : 'Expandir tudo';
+});
+
 /* ---------- gerar proposta ---------- */
 function addItem(dados) {
-  const it = Object.assign({ id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null }, dados || {});
-  ITENS.push(it);
+  ITENS.push(Object.assign({ id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null }, dados || {}));
   renderItens();
 }
 function removerItem(id) { ITENS = ITENS.filter(i => i.id !== id); if (!ITENS.length) addItem(); else renderItens(); }
-
 function renderItens() {
   $('itens').innerHTML = ITENS.map((it, i) => {
-    const p = it.prod;
-    const custo = p ? p.custo : 0;
+    const p = it.prod, custo = p ? p.custo : 0;
     const limite = custo * (1 + (parseFloat(it.margem) || 0) / 100);
+    const s = p ? statusCotacao(p) : null;
     return `<div class="itemrow" data-id="${it.id}">
       <div class="itemhead"><b>Item ${i+1}</b>
         ${p ? `<span class="tag ok">${esc(p.marca || 'produto')} encontrado</span>` : (it.sku ? '<span class="tag err">código não encontrado</span>' : '<span class="tag skip">aguardando código</span>')}
+        ${s && s.nivel !== 'ok' ? `<span class="cot ${s.nivel}">${s.nivel === 'sem' ? 'sem data de cotação' : (s.nivel === 'vencida' ? '⚠ ' : '') + s.texto}</span>` : ''}
         <div class="spacer" style="flex:1"></div>
         <button class="btn-x" data-rm="${it.id}">remover</button>
       </div>
+      ${s && s.nivel === 'vencida' ? `<div class="msg err" style="margin:0 0 12px;padding:9px 13px;font-size:12.5px">Custo cotado em ${esc(p.dtCotacao)} — ${s.dias} dias atrás. Confirme o preço com o fornecedor antes de lançar a proposta.</div>` : ''}
       <div class="grid g5">
         <div class="fld"><label>Item nº</label><input type="text" data-f="num" value="${esc(it.num)}" placeholder="1"></div>
         <div class="fld"><label>Cód. Produto (SKU)</label><input type="text" data-f="sku" value="${esc(it.sku)}" list="dlSkus" placeholder="84044" spellcheck="false"></div>
@@ -564,11 +820,10 @@ function renderItens() {
 }
 $('itens').addEventListener('input', e => {
   const inp = e.target.closest('input[data-f]'); if (!inp) return;
-  const row = inp.closest('.itemrow'), id = Number(row.dataset.id);
-  const it = ITENS.find(x => x.id === id); if (!it) return;
+  const it = ITENS.find(x => x.id === Number(inp.closest('.itemrow').dataset.id)); if (!it) return;
   it[inp.dataset.f] = inp.value;
-  if (inp.dataset.f === 'sku') { it.prod = acharProduto(inp.value); renderItensPreservando(id, 'sku'); }
-  else if (inp.dataset.f === 'margem') renderItensPreservando(id, 'margem');
+  if (inp.dataset.f === 'sku') { it.prod = acharProduto(inp.value); renderItensPreservando(it.id, 'sku'); }
+  else if (inp.dataset.f === 'margem') renderItensPreservando(it.id, 'margem');
   else atualizarResumo();
 });
 $('itens').addEventListener('click', e => {
@@ -582,21 +837,13 @@ function renderItensPreservando(id, campo) {
 function atualizarResumo() {
   const validos = ITENS.filter(i => i.prod);
   const soma = validos.reduce((a,i) => a + i.prod.custo * (1 + (parseFloat(i.margem)||0)/100), 0);
-  $('resumoProposta').textContent = validos.length
+  const venc = validos.filter(i => statusCotacao(i.prod).nivel === 'vencida').length;
+  $('resumoProposta').innerHTML = validos.length
     ? `${validos.length} item(ns) pronto(s) · soma dos limites ${fmtBRL(soma)}`
+      + (venc ? ` · <span style="color:var(--err);font-weight:600">${venc} com cotação vencida</span>` : '')
     : 'Nenhum item com código válido ainda.';
   $('btnSalvar').disabled = !validos.length;
 }
-function renderListaProd(filtro) {
-  const f = limpar(filtro || '').toUpperCase();
-  const lista = (f ? PRODUTOS.filter(p => (p.sku + ' ' + p.descricao + ' ' + p.marca).toUpperCase().includes(f)) : PRODUTOS).slice(0, 40);
-  if (!lista.length) { $('listaProd').innerHTML = '<div class="empty">Nenhum produto encontrado.</div>'; return; }
-  $('listaProd').innerHTML = `<table><thead><tr><th>Código</th><th>Descrição</th><th>Marca</th><th class="num">Custo</th><th class="num">+${MARGEM_PADRAO}%</th></tr></thead><tbody>
-    ${lista.map(p => `<tr><td class="org">${esc(p.sku)}</td><td>${esc(p.descricao)}</td><td>${esc(p.marca)}</td>
-      <td class="num">${fmtBRL(p.custo)}</td><td class="num">${fmtBRL(p.custo * (1 + MARGEM_PADRAO/100))}</td></tr>`).join('')}
-    </tbody></table>${PRODUTOS.length > lista.length && !f ? `<div class="empty" style="padding:14px">mostrando 40 de ${PRODUTOS.length} — use a busca</div>` : ''}`;
-}
-$('buscaProd').addEventListener('input', e => renderListaProd(e.target.value));
 $('btnAddItem').addEventListener('click', () => addItem());
 $('btnLimpar').addEventListener('click', () => {
   if (!confirm('Limpar todos os campos desta proposta?')) return;
@@ -605,27 +852,26 @@ $('btnLimpar').addEventListener('click', () => {
 });
 
 async function salvarProposta() {
-  const cab = {
-    link: $('p_link').value.trim(), orgao: $('p_orgao').value.trim(),
-    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value
-  };
-  if (!cab.orgao || !cab.pregao || !cab.data) {
-    setPMsg('Preencha ao menos Órgão / Comprador, Nº do Pregão e Data da Disputa.', 'warn'); return;
-  }
+  const cab = { link: $('p_link').value.trim(), orgao: $('p_orgao').value.trim(),
+    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value };
+  if (!cab.orgao || !cab.pregao || !cab.data) { setPMsg('Preencha ao menos Órgão / Comprador, Nº do Pregão e Data da Disputa.', 'warn'); return; }
   const validos = ITENS.filter(i => i.prod);
   if (!validos.length) { setPMsg('Nenhum item com código válido.', 'warn'); return; }
+
+  const vencidos = validos.filter(i => statusCotacao(i.prod).nivel === 'vencida');
+  if (vencidos.length) {
+    const lista = vencidos.map(i => `• ${i.prod.sku} — cotado em ${i.prod.dtCotacao} (${diasCotacao(i.prod)} dias)`).join('\n');
+    if (!confirm(`Atenção: ${vencidos.length} item(ns) com cotação vencida (${COT_VENCIDA}+ dias):\n\n${lista}\n\nO custo pode estar defasado. Gravar mesmo assim?`)) return;
+  }
 
   $('btnSalvar').disabled = true;
   setPMsg(`Gravando ${validos.length} linha(s) na aba "${esc(ABA1)}"…`);
   try {
     await nomesAbas();
     if (!HDR1.length) await carregarPlanilha();
-
     const dataBR = isoParaBR(cab.data);
-    const manual = {
-      'Link Effecti': cab.link, 'Órgão / Comprador': cab.orgao,
-      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR
-    };
+    const manual = { 'Link Effecti': cab.link, 'Órgão / Comprador': cab.orgao,
+      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR };
     const linhas = validos.map(it => {
       const row = new Array(HDR1.length).fill('');
       const set = (nome, v) => { if (IDX1[nome] !== undefined) row[IDX1[nome]] = v; };
@@ -635,56 +881,124 @@ async function salvarProposta() {
       set('Valor de Referência', it.ref ? numBR(moeda(it.ref)) : '');
       return row;
     });
-
     const resp = await api(rangeUrl(ABA1, `A${LINHA_HDR1}:${colLetra(HDR1.length-1)}`)
       + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&includeValuesInResponse=false',
       { method: 'POST', body: JSON.stringify({ values: linhas }) });
 
-    const faixa = resp.updates.updatedRange;              // ex.: 'Aba'!A48:T52
-    const m = faixa.match(/!([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    const m = resp.updates.updatedRange.match(/!([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
     const primeira = m ? Number(m[2]) : 0;
-
-    // Confere se as colunas derivadas se preencheram sozinhas; se vieram vazias, escreve os valores.
     let completadas = 0;
     if (primeira) {
       const lido = await api(rangeUrl(ABA1, `A${primeira}:${colLetra(HDR1.length-1)}${primeira + linhas.length - 1}`) + '?valueRenderOption=FORMULA');
-      const atual = lido.values || [];
-      const updates = [];
+      const atual = lido.values || [], updates = [];
       validos.forEach((it, i) => {
         const linhaN = primeira + i, row = atual[i] || [];
+        const mg = parseFloat(it.margem) || MARGEM_PADRAO;
         const derivadas = {
-          'Descrição do Item': it.prod.descricao,
-          'Marca': it.prod.marca,
-          'Modelo': it.prod.modelo,
+          'Descrição do Item': it.prod.descricao, 'Marca': it.prod.marca, 'Modelo': it.prod.modelo,
           'Custo Unit. (R$)': numBR(it.prod.custo),
-          'Margem %': (parseFloat(it.margem) || MARGEM_PADRAO).toString().replace('.', ',') + '%',
-          'LIMITE MÁX. LANCE (R$)': numBR(it.prod.custo * (1 + (parseFloat(it.margem) || MARGEM_PADRAO) / 100))
+          'Margem %': String(mg).replace('.', ',') + '%',
+          'LIMITE MÁX. LANCE (R$)': numBR(it.prod.custo * (1 + mg / 100))
         };
         Object.entries(derivadas).forEach(([nome, valor]) => {
           const ci = IDX1[nome]; if (ci === undefined) return;
-          const atualCel = String(row[ci] == null ? '' : row[ci]).trim();
-          if (atualCel === '') {
+          if (String(row[ci] == null ? '' : row[ci]).trim() === '')
             updates.push({ range: `'${ABA1}'!${colLetra(ci)}${linhaN}`, values: [[valor]] });
-          }
         });
       });
       if (updates.length) {
         await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}/values:batchUpdate`, {
-          method: 'POST', body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updates })
-        });
+          method: 'POST', body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updates }) });
         completadas = updates.length;
       }
     }
-
     PLANILHA = null;
-    setPMsg(`${linhas.length} linha(s) gravada(s) na aba "${esc(ABA1)}"${completadas ? `, com ${completadas} célula(s) calculada(s) preenchida(s)` : ' — as colunas calculadas se preencheram sozinhas'}. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
+    setPMsg(`${linhas.length} linha(s) gravada(s)${completadas ? `, com ${completadas} célula(s) calculada(s) preenchida(s)` : ' — as colunas calculadas se preencheram sozinhas'}. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
     ITENS = []; addItem();
     $('dt').value = cab.data;
-  } catch (e) {
-    setPMsg('Não consegui gravar: ' + esc(e.message), 'err');
-  } finally { $('btnSalvar').disabled = false; }
+  } catch (e) { setPMsg('Não consegui gravar: ' + esc(e.message), 'err'); }
+  finally { $('btnSalvar').disabled = false; }
 }
 $('btnSalvar').addEventListener('click', salvarProposta);
+
+/* ---------- produtos ---------- */
+function renderListaProd(filtro) {
+  const f = limpar(filtro || '').toUpperCase();
+  const modo = $('filtroProd').value;
+  let base = PRODUTOS;
+  if (modo === 'vencida') base = base.filter(p => statusCotacao(p).nivel === 'vencida');
+  else if (modo === 'atencao') base = base.filter(p => ['vencida','atencao'].includes(statusCotacao(p).nivel));
+  else if (modo === 'sem') base = base.filter(p => statusCotacao(p).nivel === 'sem');
+  if (f) base = base.filter(p => (p.sku + ' ' + p.descricao + ' ' + p.marca + ' ' + p.modelo).toUpperCase().includes(f));
+  base = base.slice().sort((a,b) => (diasCotacao(b) ?? -1) - (diasCotacao(a) ?? -1));
+  const lista = base.slice(0, 60);
+  if (!lista.length) { $('listaProd').innerHTML = '<div class="empty">Nenhum produto encontrado com esse filtro.</div>'; return; }
+  $('listaProd').innerHTML = `<table><thead><tr><th>Código</th><th>Descrição</th><th>Marca</th><th>Modelo</th>
+    <th class="num">Custo</th><th class="num">+${MARGEM_PADRAO}%</th><th>Cotação</th><th>Validade</th></tr></thead><tbody>
+    ${lista.map(p => { const s = statusCotacao(p);
+      return `<tr><td class="org">${esc(p.sku)}</td><td>${esc(p.descricao)}</td><td>${esc(p.marca)}</td><td>${esc(p.modelo)}</td>
+      <td class="num">${fmtBRL(p.custo)}</td><td class="num" style="color:var(--ok)">${fmtBRL(p.custo * (1 + MARGEM_PADRAO/100))}</td>
+      <td>${esc(p.dtCotacao) || '<span class="muted">—</span>'}</td>
+      <td><span class="cot ${s.nivel}">${s.dias === null ? 'sem data' : s.dias + ' dias'}</span></td></tr>`; }).join('')}
+    </tbody></table>${base.length > lista.length ? `<div class="empty" style="padding:14px">mostrando ${lista.length} de ${base.length} — use a busca</div>` : ''}`;
+}
+$('buscaProd').addEventListener('input', e => renderListaProd(e.target.value));
+$('btnToggleForm').addEventListener('click', () => {
+  const f = $('formProduto'), abrir = f.classList.contains('hide');
+  f.classList.toggle('hide', !abrir);
+  $('btnToggleForm').textContent = abrir ? 'Fechar formulário' : 'Abrir formulário';
+  if (abrir && !$('n_dtcot').value) $('n_dtcot').value = hojeIso(0);
+});
+$('n_custo').addEventListener('input', () => {
+  const c = moeda($('n_custo').value);
+  $('previewProduto').textContent = c
+    ? `Custo ${fmtBRL(c)} · com ${MARGEM_PADRAO}% fica ${fmtBRL(c * (1 + MARGEM_PADRAO/100))}`
+    : 'Preencha o custo para ver o preço com margem.';
+});
+$('btnLimparProduto').addEventListener('click', () => {
+  ['n_sku','n_desc','n_marca','n_modelo','n_forn','n_custo','n_origem','n_obs'].forEach(id => $(id).value = '');
+  $('n_dtcot').value = hojeIso(0);
+  $('previewProduto').textContent = 'Preencha o custo para ver o preço com margem.';
+  setProdMsg('');
+});
+async function salvarProduto() {
+  const p = {
+    sku: $('n_sku').value.trim(), desc: $('n_desc').value.trim(), marca: $('n_marca').value.trim(),
+    modelo: $('n_modelo').value.trim(), forn: $('n_forn').value.trim(), custo: moeda($('n_custo').value),
+    dtcot: $('n_dtcot').value, origem: $('n_origem').value.trim(), obs: $('n_obs').value.trim()
+  };
+  if (!p.sku || !p.desc || !p.custo) { setProdMsg('Código, descrição e custo são obrigatórios.', 'warn'); return; }
+  if (acharProduto(p.sku)) {
+    const ex = acharProduto(p.sku);
+    if (!confirm(`Já existe um produto com o código ${p.sku}:\n\n${ex.descricao}\nCusto ${fmtBRL(ex.custo)}\n\nGravar assim mesmo? A busca por código passará a ter duas opções.`)) return;
+  }
+  $('btnSalvarProduto').disabled = true;
+  setProdMsg('Gravando na aba "' + esc(ABA2) + '"…');
+  try {
+    if (!HDR2.length) await carregarProdutos();
+    const row = new Array(HDR2.length).fill('');
+    const set = (nome, v) => { if (IDX2[nome] !== undefined) row[IDX2[nome]] = v; };
+    set('Cód. Produto (SKU)', p.sku);
+    set('Descrição do Produto', p.desc);
+    set('Marca', p.marca);
+    set('Modelo', p.modelo);
+    set('Fornecedor', p.forn);
+    set('Custo Unit. (R$)', numBR(p.custo));
+    set('Data da Cotação', p.dtcot ? isoParaBR(p.dtcot) : '');
+    set('Origem do Preço', p.origem);
+    set('Observações', p.obs);
+    await api(rangeUrl(ABA2, `A${LINHA_HDR2}:${colLetra(HDR2.length-1)}`)
+      + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+      { method: 'POST', body: JSON.stringify({ values: [row] }) });
+    await carregarProdutos();
+    setProdMsg(`Produto <strong>${esc(p.sku)}</strong> cadastrado. Já pode ser usado em Gerar proposta. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
+    ['n_sku','n_desc','n_marca','n_modelo','n_custo','n_obs'].forEach(id => $(id).value = '');
+    $('previewProduto').textContent = 'Preencha o custo para ver o preço com margem.';
+    $('n_sku').focus();
+  } catch (e) { setProdMsg('Não consegui gravar: ' + esc(e.message), 'err'); }
+  finally { $('btnSalvarProduto').disabled = false; }
+}
+$('btnSalvarProduto').addEventListener('click', salvarProduto);
 
 /* ---------- login ---------- */
 function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prompt: TOKEN ? '' : 'consent' }); }
@@ -730,6 +1044,8 @@ $('btnBuscar').addEventListener('click', buscar);
 $('btnLancar').addEventListener('click', lancar);
 $('btnHoje').addEventListener('click', () => { $('dt').value = hojeIso(0); buscar(); });
 $('btnAmanha').addEventListener('click', () => { $('dt').value = hojeIso(1); buscar(); });
+
+carregarCfgCotacao();
 
 (function esperaGoogle() {
   if (window.google && google.accounts && google.accounts.oauth2) boot();
