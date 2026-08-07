@@ -79,13 +79,18 @@ body::after {
 .themes button[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--btn-shadow); }
 .who { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
 
+.nav { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-soft); margin-bottom: 22px; width: fit-content; }
+.nav button { border: none; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 570; padding: 8px 20px; border-radius: 999px; cursor: pointer; }
+.nav button[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--btn-shadow); }
+
 h1 { font-size: 30px; line-height: 1.14; margin: 0 0 8px; font-weight: 600; letter-spacing: -0.025em; }
 h1 span { color: var(--muted); }
 .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
 
 .bar { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 9px 10px 9px 18px; margin-bottom: 20px; backdrop-filter: blur(10px); }
 .bar label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin-right: 4px; }
-input[type=date], input[type=text] { font: inherit; padding: 8px 12px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--field-bg); color: var(--text); }
+input, select { font: inherit; padding: 8px 12px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--field-bg); color: var(--text); }
+input:focus, select:focus { outline: none; border-color: var(--muted); }
 button { font: inherit; font-weight: 550; padding: 9px 17px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; transition: opacity .12s, transform .06s; }
 button:active:not(:disabled) { transform: translateY(1px); }
 button:disabled { opacity: .4; cursor: not-allowed; }
@@ -93,6 +98,7 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .btn-go { font-weight: 620; }
 .btn-ghost { background: var(--ghost-bg); color: var(--ghost-fg); border-color: var(--border); }
 .btn-mini { padding: 5px 12px; font-size: 12px; }
+.btn-x { padding: 4px 10px; font-size: 12px; background: transparent; color: var(--muted); border-color: var(--border-soft); }
 .spacer { flex: 1; min-width: 8px; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px,1fr)); gap: 12px; margin-bottom: 20px; }
@@ -102,12 +108,14 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .card.ok .val { color: var(--ok); } .card.pend .val { color: var(--pend); }
 
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 20px; backdrop-filter: blur(10px); }
-.panel h2 { font-size: 12.5px; font-weight: 620; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); }
+.panel h2 { font-size: 12.5px; font-weight: 620; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px; }
+.panel h2 .hint { font-weight: 450; color: var(--muted); text-transform: none; letter-spacing: 0; font-size: 11.5px; }
+.body { padding: 18px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--border-soft); font-weight: 620; white-space: nowrap; }
 td { padding: 11px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: top; color: var(--text-2); }
 tbody tr:last-child td { border-bottom: none; }
-td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.org { font-weight: 550; color: var(--text); }
 tfoot td { border-top: 1px solid var(--border); font-weight: 640; color: var(--text); }
 .tag { display: inline-block; font-size: 10.5px; font-weight: 640; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
@@ -120,13 +128,27 @@ a { color: var(--link); text-decoration: none; } a:hover { text-decoration: unde
 .msg { padding: 13px 17px; border-radius: 14px; margin-bottom: 18px; font-size: 13px; border: 1px solid var(--border); background: var(--surface); }
 .msg.warn { border-color: var(--pend-bg); color: var(--pend); }
 .msg.err { border-color: var(--err-bg); color: var(--err); }
+.msg.ok { border-color: var(--ok-bg); color: var(--ok); }
 .empty { padding: 40px 16px; text-align: center; color: var(--muted); }
 .foot { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 22px; }
 
+/* formulário */
+.grid { display: grid; gap: 14px; }
+.g5 { grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); }
+.fld label { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 620; margin-bottom: 6px; }
+.fld input { width: 100%; border-radius: 10px; }
+.fld input[readonly] { opacity: .72; cursor: default; }
+.itemrow { border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px; margin-bottom: 12px; background: var(--surface-2); }
+.itemhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.itemhead b { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.calc { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-soft); font-size: 12.5px; }
+.calc div span { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; display: block; }
+.calc div b { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.calc .destaque b { color: var(--ok); font-size: 15px; }
+
 #setup { max-width: 640px; margin: 50px auto; }
-#setup .body { padding: 22px 24px 24px; }
 #setup p { color: var(--text-2); margin: 0 0 14px; }
-#setup input[type=text] { width: 100%; border-radius: 12px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
+#setup input { width: 100%; border-radius: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
 code { background: var(--surface-2); border: 1px solid var(--border-soft); padding: 1px 6px; border-radius: 6px; font-size: 12.5px; }
 .hide { display: none !important; }
 </style>
@@ -167,46 +189,107 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
     <div class="themes"><button data-t="paymark">Paymark</button><button data-t="escuro">Escuro</button><button data-t="claro">Claro</button></div>
   </div>
 
-  <h1>Controle de disputas<br><span>fase de lances</span></h1>
-  <div class="sub">Planilha <strong>Controle de Licitações_Fase de Lances</strong> no Google Drive · eventos no Google Agenda</div>
-
-  <div class="bar">
-    <label for="dt">Data da disputa</label>
-    <input type="date" id="dt">
-    <button class="btn-primary" id="btnBuscar">Buscar</button>
-    <button class="btn-ghost" id="btnHoje">Hoje</button>
-    <button class="btn-ghost" id="btnAmanha">Amanhã</button>
-    <div class="spacer"></div>
-    <button class="btn-go" id="btnLancar" disabled>Lançar na agenda</button>
+  <div class="nav" id="nav">
+    <button data-v="agenda">Agenda</button>
+    <button data-v="proposta">Gerar proposta</button>
   </div>
 
-  <div id="msg"></div>
-  <div class="cards" id="cards"></div>
+  <!-- ============ VIEW AGENDA ============ -->
+  <div id="v-agenda">
+    <h1>Controle de disputas<br><span>fase de lances</span></h1>
+    <div class="sub">Planilha <strong>Controle de Licitações_Fase de Lances</strong> · eventos no Google Agenda</div>
 
-  <div class="panel">
-    <h2 id="tituloTabela">Pregões da data</h2>
-    <div id="tabela"><div class="empty">Escolha uma data e clique em Buscar.</div></div>
+    <div class="bar">
+      <label for="dt">Data da disputa</label>
+      <input type="date" id="dt">
+      <button class="btn-primary" id="btnBuscar">Buscar</button>
+      <button class="btn-ghost" id="btnHoje">Hoje</button>
+      <button class="btn-ghost" id="btnAmanha">Amanhã</button>
+      <div class="spacer"></div>
+      <button class="btn-go" id="btnLancar" disabled>Lançar na agenda</button>
+    </div>
+
+    <div id="msg"></div>
+    <div class="cards" id="cards"></div>
+
+    <div class="panel">
+      <h2 id="tituloTabela">Pregões da data</h2>
+      <div id="tabela"><div class="empty">Escolha uma data e clique em Buscar.</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>Total cadastrado na planilha</h2>
+      <div id="geral"><div class="empty">—</div></div>
+    </div>
+    <div class="foot" id="foot"></div>
   </div>
 
-  <div class="panel">
-    <h2>Total cadastrado na planilha</h2>
-    <div id="geral"><div class="empty">—</div></div>
-  </div>
+  <!-- ============ VIEW PROPOSTA ============ -->
+  <div id="v-proposta" class="hide">
+    <h1>Gerar proposta<br><span>novo pregão na planilha</span></h1>
+    <div class="sub">As linhas são acrescentadas no fim da primeira aba. Nada acima é alterado.</div>
 
-  <div class="foot" id="foot"></div>
+    <div id="pmsg"></div>
+
+    <div class="panel">
+      <h2>Dados do pregão <span class="hint">preenchidos uma vez, repetidos em todos os itens</span></h2>
+      <div class="body">
+        <div class="grid g5">
+          <div class="fld" style="grid-column:1/-1"><label for="p_link">Link Effecti</label><input type="text" id="p_link" placeholder="https://minha.effecti.com.br/#/aviso/..." spellcheck="false"></div>
+          <div class="fld"><label for="p_orgao">Órgão / Comprador</label><input type="text" id="p_orgao" placeholder="PREFEITURA MUNICIPAL DE..."></div>
+          <div class="fld"><label for="p_pregao">Nº do Pregão / Dispensa</label><input type="text" id="p_pregao" placeholder="23/2026"></div>
+          <div class="fld"><label for="p_uasg">UASG</label><input type="text" id="p_uasg" placeholder="160518, BLL ou CP"></div>
+          <div class="fld"><label for="p_data">Data da Disputa</label><input type="date" id="p_data"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Itens <span class="hint">digite o código e o resto vem da aba de produtos</span></h2>
+      <div class="body">
+        <div id="itens"></div>
+        <button class="btn-ghost" id="btnAddItem">+ Adicionar item</button>
+      </div>
+    </div>
+
+    <div class="bar">
+      <span class="muted" id="resumoProposta" style="font-size:12.5px">Nenhum item preenchido.</span>
+      <div class="spacer"></div>
+      <button class="btn-ghost" id="btnLimpar">Limpar tudo</button>
+      <button class="btn-go" id="btnSalvar">Salvar na planilha</button>
+    </div>
+
+    <div class="panel">
+      <h2>Produtos disponíveis <span class="hint" id="qtdProdutos"></span></h2>
+      <div class="body">
+        <input type="text" id="buscaProd" placeholder="Buscar por código, descrição ou marca…" style="width:100%;border-radius:10px">
+        <div id="listaProd" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<datalist id="dlSkus"></datalist>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 const FILE_ID = '1Cu_A8-INW_yG_YKWA5xbfS0TQdElp40caglNJ2h3exc';
-const SCOPES  = 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/' + FILE_ID + '/edit';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+const MARGEM_PADRAO = 30;
 
-let TOKEN = null, TOKEN_CLIENT = null, PLANILHA = null, GRUPOS = [], DATA_SEL = '';
+let TOKEN = null, TOKEN_CLIENT = null;
+let ABA1 = '', ABA2 = '', HDR1 = [], IDX1 = {}, LINHA_HDR1 = 0;
+let PLANILHA = null, PRODUTOS = [], GRUPOS = [], DATA_SEL = '';
+let ITENS = [];
+let seq = 0;
+
 const $ = id => document.getElementById(id);
 const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
              set: (k,v) => { try { localStorage.setItem(k,v); } catch (e) {} },
              del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
 
+/* ---------- tema / navegação ---------- */
 function aplicarTema(t) {
   document.documentElement.setAttribute('data-theme', t);
   document.querySelectorAll('.themes').forEach(box =>
@@ -218,6 +301,15 @@ document.querySelectorAll('.themes').forEach(box => box.addEventListener('click'
 }));
 aplicarTema(ls.get('painel-lic-tema') || 'paymark');
 
+function mostrarView(v) {
+  $('v-agenda').classList.toggle('hide', v !== 'agenda');
+  $('v-proposta').classList.toggle('hide', v !== 'proposta');
+  [...$('nav').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
+  if (v === 'proposta' && !PRODUTOS.length) carregarProdutos();
+}
+$('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) mostrarView(b.dataset.v); });
+
+/* ---------- utilitários ---------- */
 const limpar = s => String(s == null ? '' : s).replace(/&#13;/g,'').replace(/\s+/g,' ').trim();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function moeda(s) {
@@ -226,6 +318,7 @@ function moeda(s) {
   return isNaN(n) ? 0 : n;
 }
 const fmtBRL = n => n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const numBR = n => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const isoParaBR = iso => { const [a,m,d] = iso.split('-'); return `${d}/${m}/${a}`; };
 const brParaIso = br => { const p = br.split('/'); return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : ''; };
 function isoMais(iso, dias) {
@@ -238,10 +331,7 @@ function hojeIso(d0) {
 }
 function normalizaData(v) {
   const s = limpar(v);
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
-    const p = s.split('/');
-    return `${p[0].padStart(2,'0')}/${p[1].padStart(2,'0')}/${p[2]}`;
-  }
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) { const p = s.split('/'); return `${p[0].padStart(2,'0')}/${p[1].padStart(2,'0')}/${p[2]}`; }
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return isoParaBR(s.slice(0,10));
   const n = Number(s);
   if (s && !isNaN(n) && n > 20000 && n < 80000) {
@@ -250,7 +340,9 @@ function normalizaData(v) {
   }
   return '';
 }
+function colLetra(i) { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
 
+/* ---------- API ---------- */
 async function api(url, opts) {
   const r = await fetch(url, Object.assign({}, opts, {
     headers: Object.assign({ Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' }, (opts||{}).headers)
@@ -259,43 +351,70 @@ async function api(url, opts) {
   if (!r.ok) { let d; try { d = (await r.json()).error.message; } catch (e) { d = r.statusText; } throw new Error(d); }
   return r.json();
 }
-async function carregarPlanilha() {
-  if (PLANILHA) return PLANILHA;
+const rangeUrl = (aba, a1) => `https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}/values/${encodeURIComponent("'" + aba + "'!" + a1)}`;
+
+async function nomesAbas() {
+  if (ABA1 && ABA2) return;
   const meta = await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}?fields=sheets.properties.title`);
-  const aba = meta.sheets[0].properties.title;
-  const dados = await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}/values/${encodeURIComponent("'" + aba + "'!A1:T1000")}?valueRenderOption=FORMATTED_VALUE`);
+  ABA1 = meta.sheets[0].properties.title;
+  ABA2 = (meta.sheets[1] || meta.sheets[0]).properties.title;
+}
+async function carregarPlanilha() {
+  await nomesAbas();
+  const dados = await api(rangeUrl(ABA1, 'A1:T2000') + '?valueRenderOption=FORMATTED_VALUE');
   const rows = dados.values || [];
   const hi = rows.findIndex(r => r.indexOf('Link Effecti') !== -1);
-  if (hi === -1) throw new Error('Cabeçalho "Link Effecti" não encontrado na aba "' + aba + '".');
-  const idx = {}; rows[hi].forEach((h,i) => idx[limpar(h)] = i);
-  const col = (r, nome) => limpar(r[idx[nome]]);
+  if (hi === -1) throw new Error('Cabeçalho "Link Effecti" não encontrado na aba "' + ABA1 + '".');
+  LINHA_HDR1 = hi + 1;
+  HDR1 = rows[hi].map(limpar);
+  IDX1 = {}; HDR1.forEach((h,i) => IDX1[h] = i);
+  const col = (r, nome) => limpar(r[IDX1[nome]]);
   const itens = [];
   for (const r of rows.slice(hi+1)) {
     if (!r || !r.length) continue;
-    const data = normalizaData(r[idx['Data da Disputa']]);
+    const data = normalizaData(r[IDX1['Data da Disputa']]);
     if (!data) continue;
     const orgao = col(r,'Órgão / Comprador'), pregao = col(r,'Nº do Pregão / Dispensa');
     itens.push({ data, orgao, pregao, uasg: col(r,'UASG'), link: col(r,'Link Effecti'),
-      limite: moeda(r[idx['LIMITE MÁX. LANCE (R$)']]), suspenso: /SUSPENSO/i.test(orgao), semNumero: !pregao });
+      limite: moeda(r[IDX1['LIMITE MÁX. LANCE (R$)']]), suspenso: /SUSPENSO/i.test(orgao), semNumero: !pregao });
   }
   PLANILHA = itens; return itens;
 }
-function agrupar(itens) {
-  const m = new Map();
-  for (const it of itens) {
-    const k = [it.data,it.orgao,it.pregao,it.uasg].join('§');
-    if (!m.has(k)) m.set(k, { data:it.data, orgao:it.orgao, pregao:it.pregao, uasg:it.uasg,
-      link:'', itens:0, limite:0, suspenso:it.suspenso, semNumero:it.semNumero });
-    const g = m.get(k); g.itens++; g.limite += it.limite; if (!g.link && it.link) g.link = it.link;
+async function carregarProdutos() {
+  try {
+    $('qtdProdutos').textContent = 'carregando…';
+    await nomesAbas();
+    const dados = await api(rangeUrl(ABA2, 'A1:J2000') + '?valueRenderOption=FORMATTED_VALUE');
+    const rows = dados.values || [];
+    const hi = rows.findIndex(r => r.some(c => limpar(c).startsWith('Cód. Produto')));
+    if (hi === -1) throw new Error('Cabeçalho "Cód. Produto (SKU)" não encontrado na aba "' + ABA2 + '".');
+    const h = rows[hi].map(limpar), ix = {}; h.forEach((c,i) => ix[c] = i);
+    PRODUTOS = rows.slice(hi+1).map(r => ({
+      sku: limpar(r[ix['Cód. Produto (SKU)']]),
+      descricao: limpar(r[ix['Descrição do Produto']]),
+      marca: limpar(r[ix['Marca']]),
+      modelo: limpar(r[ix['Modelo']]),
+      fornecedor: limpar(r[ix['Fornecedor']]),
+      custo: moeda(r[ix['Custo Unit. (R$)']])
+    })).filter(p => p.sku);
+    $('qtdProdutos').textContent = PRODUTOS.length + ' produtos na aba "' + ABA2 + '"';
+    $('dlSkus').innerHTML = PRODUTOS.map(p => `<option value="${esc(p.sku)}">${esc(p.descricao.slice(0,70))}</option>`).join('');
+    renderListaProd();
+    if (!ITENS.length) addItem();
+  } catch (e) {
+    $('qtdProdutos').textContent = '';
+    setPMsg('Não consegui carregar os produtos: ' + esc(e.message), 'err');
   }
-  return [...m.values()];
+}
+function acharProduto(sku) {
+  const k = limpar(sku).toUpperCase();
+  return PRODUTOS.find(p => p.sku.toUpperCase() === k) || null;
 }
 async function eventosDoDia(iso) {
   const u = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
   u.searchParams.set('timeMin', iso + 'T00:00:00-03:00');
   u.searchParams.set('timeMax', iso + 'T23:59:59-03:00');
-  u.searchParams.set('singleEvents','true');
-  u.searchParams.set('maxResults','250');
+  u.searchParams.set('singleEvents','true'); u.searchParams.set('maxResults','250');
   const d = await api(u.toString());
   return (d.items||[]).map(e => ({ summary: e.summary||'', description: e.description||'' }));
 }
@@ -315,8 +434,21 @@ async function criarEvento(g, iso) {
     })
   });
 }
+function agrupar(itens) {
+  const m = new Map();
+  for (const it of itens) {
+    const k = [it.data,it.orgao,it.pregao,it.uasg].join('§');
+    if (!m.has(k)) m.set(k, { data:it.data, orgao:it.orgao, pregao:it.pregao, uasg:it.uasg,
+      link:'', itens:0, limite:0, suspenso:it.suspenso, semNumero:it.semNumero });
+    const g = m.get(k); g.itens++; g.limite += it.limite; if (!g.link && it.link) g.link = it.link;
+  }
+  return [...m.values()];
+}
 
+/* ---------- render agenda ---------- */
 const setMsg = (t,tipo) => $('msg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
+const setPMsg = (t,tipo) => $('pmsg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
+
 function renderCards(g) {
   const v = g.filter(x => !x.suspenso && !x.semNumero);
   const na = v.filter(x => x.jaExiste).length, pend = v.length - na;
@@ -358,7 +490,6 @@ function renderGeral() {
     <tbody>${ord.map(([d,v]) => `<tr><td>${d}</td><td class="num">${v.p}</td><td class="num">${v.i}</td></tr>`).join('')}</tbody>
     <tfoot><tr><td>Total</td><td class="num">${todos.length}</td><td class="num">${todos.reduce((a,x)=>a+x.itens,0)}</td></tr></tfoot></table>`;
 }
-
 async function buscar() {
   const iso = $('dt').value;
   if (!iso) { setMsg('Escolha uma data primeiro.','warn'); return; }
@@ -392,13 +523,175 @@ async function lancar() {
     renderTabela(GRUPOS);
   }
   renderCards(GRUPOS); renderTabela(GRUPOS);
-  setMsg(`${ok} evento(s) criado(s)${falha ? `, ${falha} com erro` : ''}.`, falha ? 'err' : '');
+  setMsg(`${ok} evento(s) criado(s)${falha ? `, ${falha} com erro` : ''}.`, falha ? 'err' : 'ok');
 }
 
+/* ---------- gerar proposta ---------- */
+function addItem(dados) {
+  const it = Object.assign({ id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null }, dados || {});
+  ITENS.push(it);
+  renderItens();
+}
+function removerItem(id) { ITENS = ITENS.filter(i => i.id !== id); if (!ITENS.length) addItem(); else renderItens(); }
+
+function renderItens() {
+  $('itens').innerHTML = ITENS.map((it, i) => {
+    const p = it.prod;
+    const custo = p ? p.custo : 0;
+    const limite = custo * (1 + (parseFloat(it.margem) || 0) / 100);
+    return `<div class="itemrow" data-id="${it.id}">
+      <div class="itemhead"><b>Item ${i+1}</b>
+        ${p ? `<span class="tag ok">${esc(p.marca || 'produto')} encontrado</span>` : (it.sku ? '<span class="tag err">código não encontrado</span>' : '<span class="tag skip">aguardando código</span>')}
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn-x" data-rm="${it.id}">remover</button>
+      </div>
+      <div class="grid g5">
+        <div class="fld"><label>Item nº</label><input type="text" data-f="num" value="${esc(it.num)}" placeholder="1"></div>
+        <div class="fld"><label>Cód. Produto (SKU)</label><input type="text" data-f="sku" value="${esc(it.sku)}" list="dlSkus" placeholder="84044" spellcheck="false"></div>
+        <div class="fld"><label>Valor de Referência</label><input type="text" data-f="ref" value="${esc(it.ref)}" placeholder="1.500,00"></div>
+        <div class="fld"><label>Margem %</label><input type="text" data-f="margem" value="${esc(it.margem)}"></div>
+      </div>
+      <div class="calc">
+        <div style="flex:1;min-width:240px"><span>Descrição</span><b>${p ? esc(p.descricao) : '—'}</b></div>
+        <div><span>Marca</span><b>${p ? esc(p.marca) : '—'}</b></div>
+        <div><span>Modelo</span><b>${p ? esc(p.modelo) : '—'}</b></div>
+        <div><span>Custo unit.</span><b>${p ? fmtBRL(custo) : '—'}</b></div>
+        <div class="destaque"><span>Limite máx. lance</span><b>${p ? fmtBRL(limite) : '—'}</b></div>
+      </div>
+    </div>`;
+  }).join('');
+  atualizarResumo();
+}
+$('itens').addEventListener('input', e => {
+  const inp = e.target.closest('input[data-f]'); if (!inp) return;
+  const row = inp.closest('.itemrow'), id = Number(row.dataset.id);
+  const it = ITENS.find(x => x.id === id); if (!it) return;
+  it[inp.dataset.f] = inp.value;
+  if (inp.dataset.f === 'sku') { it.prod = acharProduto(inp.value); renderItensPreservando(id, 'sku'); }
+  else if (inp.dataset.f === 'margem') renderItensPreservando(id, 'margem');
+  else atualizarResumo();
+});
+$('itens').addEventListener('click', e => {
+  const b = e.target.closest('button[data-rm]'); if (b) removerItem(Number(b.dataset.rm));
+});
+function renderItensPreservando(id, campo) {
+  renderItens();
+  const el = document.querySelector(`.itemrow[data-id="${id}"] input[data-f="${campo}"]`);
+  if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+}
+function atualizarResumo() {
+  const validos = ITENS.filter(i => i.prod);
+  const soma = validos.reduce((a,i) => a + i.prod.custo * (1 + (parseFloat(i.margem)||0)/100), 0);
+  $('resumoProposta').textContent = validos.length
+    ? `${validos.length} item(ns) pronto(s) · soma dos limites ${fmtBRL(soma)}`
+    : 'Nenhum item com código válido ainda.';
+  $('btnSalvar').disabled = !validos.length;
+}
+function renderListaProd(filtro) {
+  const f = limpar(filtro || '').toUpperCase();
+  const lista = (f ? PRODUTOS.filter(p => (p.sku + ' ' + p.descricao + ' ' + p.marca).toUpperCase().includes(f)) : PRODUTOS).slice(0, 40);
+  if (!lista.length) { $('listaProd').innerHTML = '<div class="empty">Nenhum produto encontrado.</div>'; return; }
+  $('listaProd').innerHTML = `<table><thead><tr><th>Código</th><th>Descrição</th><th>Marca</th><th class="num">Custo</th><th class="num">+${MARGEM_PADRAO}%</th></tr></thead><tbody>
+    ${lista.map(p => `<tr><td class="org">${esc(p.sku)}</td><td>${esc(p.descricao)}</td><td>${esc(p.marca)}</td>
+      <td class="num">${fmtBRL(p.custo)}</td><td class="num">${fmtBRL(p.custo * (1 + MARGEM_PADRAO/100))}</td></tr>`).join('')}
+    </tbody></table>${PRODUTOS.length > lista.length && !f ? `<div class="empty" style="padding:14px">mostrando 40 de ${PRODUTOS.length} — use a busca</div>` : ''}`;
+}
+$('buscaProd').addEventListener('input', e => renderListaProd(e.target.value));
+$('btnAddItem').addEventListener('click', () => addItem());
+$('btnLimpar').addEventListener('click', () => {
+  if (!confirm('Limpar todos os campos desta proposta?')) return;
+  ['p_link','p_orgao','p_pregao','p_uasg','p_data'].forEach(id => $(id).value = '');
+  ITENS = []; addItem(); setPMsg('');
+});
+
+async function salvarProposta() {
+  const cab = {
+    link: $('p_link').value.trim(), orgao: $('p_orgao').value.trim(),
+    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value
+  };
+  if (!cab.orgao || !cab.pregao || !cab.data) {
+    setPMsg('Preencha ao menos Órgão / Comprador, Nº do Pregão e Data da Disputa.', 'warn'); return;
+  }
+  const validos = ITENS.filter(i => i.prod);
+  if (!validos.length) { setPMsg('Nenhum item com código válido.', 'warn'); return; }
+
+  $('btnSalvar').disabled = true;
+  setPMsg(`Gravando ${validos.length} linha(s) na aba "${esc(ABA1)}"…`);
+  try {
+    await nomesAbas();
+    if (!HDR1.length) await carregarPlanilha();
+
+    const dataBR = isoParaBR(cab.data);
+    const manual = {
+      'Link Effecti': cab.link, 'Órgão / Comprador': cab.orgao,
+      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR
+    };
+    const linhas = validos.map(it => {
+      const row = new Array(HDR1.length).fill('');
+      const set = (nome, v) => { if (IDX1[nome] !== undefined) row[IDX1[nome]] = v; };
+      Object.entries(manual).forEach(([k,v]) => set(k, v));
+      set('Item nº', it.num);
+      set('Cód. Produto (SKU)', it.prod.sku);
+      set('Valor de Referência', it.ref ? numBR(moeda(it.ref)) : '');
+      return row;
+    });
+
+    const resp = await api(rangeUrl(ABA1, `A${LINHA_HDR1}:${colLetra(HDR1.length-1)}`)
+      + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&includeValuesInResponse=false',
+      { method: 'POST', body: JSON.stringify({ values: linhas }) });
+
+    const faixa = resp.updates.updatedRange;              // ex.: 'Aba'!A48:T52
+    const m = faixa.match(/!([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    const primeira = m ? Number(m[2]) : 0;
+
+    // Confere se as colunas derivadas se preencheram sozinhas; se vieram vazias, escreve os valores.
+    let completadas = 0;
+    if (primeira) {
+      const lido = await api(rangeUrl(ABA1, `A${primeira}:${colLetra(HDR1.length-1)}${primeira + linhas.length - 1}`) + '?valueRenderOption=FORMULA');
+      const atual = lido.values || [];
+      const updates = [];
+      validos.forEach((it, i) => {
+        const linhaN = primeira + i, row = atual[i] || [];
+        const derivadas = {
+          'Descrição do Item': it.prod.descricao,
+          'Marca': it.prod.marca,
+          'Modelo': it.prod.modelo,
+          'Custo Unit. (R$)': numBR(it.prod.custo),
+          'Margem %': (parseFloat(it.margem) || MARGEM_PADRAO).toString().replace('.', ',') + '%',
+          'LIMITE MÁX. LANCE (R$)': numBR(it.prod.custo * (1 + (parseFloat(it.margem) || MARGEM_PADRAO) / 100))
+        };
+        Object.entries(derivadas).forEach(([nome, valor]) => {
+          const ci = IDX1[nome]; if (ci === undefined) return;
+          const atualCel = String(row[ci] == null ? '' : row[ci]).trim();
+          if (atualCel === '') {
+            updates.push({ range: `'${ABA1}'!${colLetra(ci)}${linhaN}`, values: [[valor]] });
+          }
+        });
+      });
+      if (updates.length) {
+        await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}/values:batchUpdate`, {
+          method: 'POST', body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updates })
+        });
+        completadas = updates.length;
+      }
+    }
+
+    PLANILHA = null;
+    setPMsg(`${linhas.length} linha(s) gravada(s) na aba "${esc(ABA1)}"${completadas ? `, com ${completadas} célula(s) calculada(s) preenchida(s)` : ' — as colunas calculadas se preencheram sozinhas'}. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
+    ITENS = []; addItem();
+    $('dt').value = cab.data;
+  } catch (e) {
+    setPMsg('Não consegui gravar: ' + esc(e.message), 'err');
+  } finally { $('btnSalvar').disabled = false; }
+}
+$('btnSalvar').addEventListener('click', salvarProposta);
+
+/* ---------- login ---------- */
 function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prompt: TOKEN ? '' : 'consent' }); }
 async function aposLogin() {
   $('setup').classList.add('hide');
   $('app').classList.remove('hide');
+  mostrarView('agenda');
   try { const u = await api('https://www.googleapis.com/oauth2/v3/userinfo'); $('conta').textContent = u.email || ''; } catch (e) {}
   $('dt').value = hojeIso(1);
   buscar();
