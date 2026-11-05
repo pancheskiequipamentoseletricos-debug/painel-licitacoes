@@ -276,14 +276,27 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
     <div class="sub">As linhas são acrescentadas no fim da primeira aba. Nada acima é alterado.</div>
     <div id="pmsg"></div>
     <div class="panel">
-      <h2>Dados do pregão <span class="hint">preenchidos uma vez, repetidos em todos os itens</span></h2>
+      <h2>Dados do pregão <span class="hint">preenchidos uma vez, repetidos em todos os itens</span>
+        <div class="spacer" style="flex:1"></div>
+        <button class="btn-ghost" id="btnEffectiAjuda" type="button" style="padding:5px 12px;font-size:12px">Botão do Effecti</button>
+      </h2>
       <div class="body">
+        <div id="effectiAjuda" class="msg hide">
+          <b>Importar dados direto do Effecti</b><br>
+          1. Mostre a barra de favoritos do navegador (Ctrl+Shift+B).<br>
+          2. <b>Arraste</b> este botão para a barra de favoritos:
+          <a id="bmEffecti" href="#" style="display:inline-block;margin:6px 4px;padding:5px 12px;border-radius:999px;border:1px solid var(--border);font-weight:620;text-decoration:none">📥 Enviar p/ Painel</a><br>
+          3. No Effecti, abra o aviso do pregão e clique no favorito. O painel abre com os campos já preenchidos.
+          <div id="effectiAviso" class="muted" style="margin-top:6px"></div>
+        </div>
+        <div id="effectiResultado"></div>
         <div class="grid g5">
           <div class="fld" style="grid-column:1/-1"><label for="p_link">Link Effecti</label><input type="text" id="p_link" placeholder="https://minha.effecti.com.br/#/aviso/..." spellcheck="false"></div>
           <div class="fld"><label for="p_orgao">Órgão / Comprador</label><input type="text" id="p_orgao" placeholder="PREFEITURA MUNICIPAL DE..."></div>
           <div class="fld"><label for="p_pregao">Nº do Pregão / Dispensa</label><input type="text" id="p_pregao" placeholder="23/2026"></div>
           <div class="fld"><label for="p_uasg">UASG</label><input type="text" id="p_uasg" placeholder="160518, BLL ou CP"></div>
           <div class="fld"><label for="p_data">Data da Disputa</label><input type="date" id="p_data"></div>
+          <div class="fld"><label for="p_prazo">Prazo para Envio</label><input type="datetime-local" id="p_prazo"></div>
         </div>
       </div>
     </div>
@@ -1041,13 +1054,15 @@ function atualizarResumo() {
 $('btnAddItem').addEventListener('click', () => addItem());
 $('btnLimpar').addEventListener('click', () => {
   if (!confirm('Limpar todos os campos desta proposta?')) return;
-  ['p_link','p_orgao','p_pregao','p_uasg','p_data'].forEach(id => $(id).value = '');
+  ['p_link','p_orgao','p_pregao','p_uasg','p_data','p_prazo'].forEach(id => $(id).value = '');
+  $('effectiResultado').innerHTML = '';
   ITENS = []; addItem(); setPMsg('');
 });
 
 async function salvarProposta() {
   const cab = { link: $('p_link').value.trim(), orgao: $('p_orgao').value.trim(),
-    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value };
+    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value,
+    prazo: $('p_prazo').value };
   if (!cab.orgao || !cab.pregao || !cab.data) { setPMsg('Preencha ao menos Órgão / Comprador, Nº do Pregão e Data da Disputa.', 'warn'); return; }
   const validos = ITENS.filter(itemValido);
   if (!validos.length) { setPMsg('Nenhum item preenchido. Cada item precisa de descrição e custo.', 'warn'); return; }
@@ -1065,7 +1080,8 @@ async function salvarProposta() {
     if (!HDR1.length) await carregarPlanilha();
     const dataBR = isoParaBR(cab.data);
     const manual = { 'Link Effecti': cab.link, 'Órgão / Comprador': cab.orgao,
-      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR };
+      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR,
+      'Prazo para Envio': cab.prazo ? isoParaBR(cab.prazo.slice(0,10)) + ' ' + cab.prazo.slice(11,16) : '' };
     const linhas = validos.map(it => {
       const d = dadosItem(it);
       const row = new Array(HDR1.length).fill('');
@@ -1417,6 +1433,89 @@ async function renderDashboard(forcar) {
     : '<div class="empty">Sem dados no período.</div>';
 }
 
+/* ---------- importar do Effecti (favorito) ----------
+   O favorito roda na página do Effecti, copia o texto visível e abre este painel com
+   "#effecti=<dados>" no endereço. O trecho depois do # não sai do navegador.
+   A leitura dos campos fica aqui no painel: se o Effecti mudar o layout, basta ajustar
+   extrairEffecti() — não precisa reinstalar o favorito. */
+const semAcento = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function extrairEffecti(texto) {
+  const linhas = String(texto || '').split(/\n/).map(limpar).filter(Boolean);
+  const norm = linhas.map(semAcento);
+  // procura o rótulo no começo de uma linha; o valor vem depois dele ou nas 2 linhas seguintes
+  function campo(rotulos, teste) {
+    for (const r of rotulos) {
+      for (let i = 0; i < linhas.length; i++) {
+        const p = norm[i].indexOf(r);
+        if (p === -1 || p > 3) continue;
+        const resto = linhas[i].slice(p + r.length).replace(/^[\s:.\-–—]+/, '').trim();
+        for (const c of [resto, linhas[i+1] || '', linhas[i+2] || '']) {
+          if (!c) continue;
+          const v = teste(c);
+          if (v) return v;
+        }
+      }
+    }
+    return null;
+  }
+  const tData = c => { const m = c.match(/(\d{2})\/(\d{2})\/(\d{4})(?:\D{0,8}(\d{1,2})[:h](\d{2}))?/);
+    return m ? { iso: `${m[3]}-${m[2]}-${m[1]}`, hora: m[4] ? `${m[4].padStart(2,'0')}:${m[5]}` : '' } : null; };
+  const tUasg = c => { const m = c.match(/^\D{0,4}(\d{5,6})\b/); return m ? m[1] : null; };
+  const tNum = c => { const m = c.match(/\b(\d{1,6})\s*\/\s*(\d{4})\b/); return m ? m[1] + '/' + m[2] : null; };
+  const tTexto = c => (c.length > 3 && !/:$/.test(c) && /[a-z]{3}/i.test(c)) ? c : null;
+
+  const r = {};
+  r.orgao = campo(['orgao comprador','orgao / comprador','orgao','comprador','entidade','unidade compradora','unidade gestora'], tTexto);
+  r.uasg = campo(['codigo da uasg','codigo uasg','cod. uasg','uasg'], tUasg);
+  if (!r.uasg) { const m = String(texto).match(/UASG\D{0,12}(\d{5,6})/i); if (m) r.uasg = m[1]; }
+  r.pregao = campo(['numero do pregao','n. do pregao','nº do pregao','pregao eletronico','pregao','dispensa','edital','numero','nº','processo'], tNum);
+  r.prazo = campo(['prazo para envio','prazo de envio','prazo envio','limite para envio','limite de envio',
+    'fim do recebimento','encerramento do recebimento','recebimento das propostas','recebimento de propostas','prazo'], tData);
+  r.disputa = campo(['data da disputa','inicio da disputa','data de abertura','abertura da sessao','data da sessao',
+    'sessao publica','abertura','disputa','data do certame','data'], tData);
+  return r;
+}
+function aplicarEffecti(d) {
+  const r = extrairEffecti(d.t), ok = [], faltou = [];
+  const por = (id, valor, nome) => { if (valor) { $(id).value = valor; ok.push(nome); } else faltou.push(nome); };
+  if (d.u) { $('p_link').value = d.u; ok.push('Link'); }
+  por('p_orgao', r.orgao, 'Órgão');
+  por('p_pregao', r.pregao, 'Nº do Pregão');
+  por('p_uasg', r.uasg, 'UASG');
+  por('p_data', r.disputa && r.disputa.iso, 'Data da Disputa');
+  por('p_prazo', r.prazo && (r.prazo.iso + 'T' + (r.prazo.hora || '23:59')), 'Prazo para Envio');
+  const semHora = r.prazo && !r.prazo.hora ? ' <span class="muted">(prazo sem horário na página: coloquei 23:59)</span>' : '';
+  $('effectiResultado').innerHTML = `<div class="msg ${faltou.length ? 'warn' : 'ok'}">
+    <b>Importado do Effecti:</b> ${ok.join(', ') || 'nada'}.${semHora}
+    ${faltou.length ? `<br><b>Não encontrei:</b> ${faltou.join(', ')} — preencha à mão e confira os demais.` : ' Confira antes de salvar.'}
+    <details style="margin-top:8px"><summary style="cursor:pointer">Ver texto recebido da página</summary>
+    <textarea readonly style="width:100%;min-height:160px;margin-top:6px;font-size:11.5px">${esc(d.t || '')}</textarea></details></div>`;
+  if (TOKEN) mostrarView('proposta');
+  $('effectiResultado').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function lerHashEffecti() {
+  if (!location.hash.startsWith('#effecti=')) return;
+  let d = null;
+  try { d = JSON.parse(decodeURIComponent(location.hash.slice(9))); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  if (d) aplicarEffecti(d);
+  else $('effectiResultado').innerHTML = '<div class="msg err">Não consegui ler os dados enviados pelo favorito do Effecti.</div>';
+}
+window.addEventListener('hashchange', lerHashEffecti);
+(function montarFavorito() {
+  const painel = location.origin + location.pathname;
+  const codigo = `(function(){var U=${JSON.stringify(painel)};`
+    + `if(!/effecti\\.com\\.br$/.test(location.hostname)){alert('Abra um aviso no Effecti e clique neste favorito lá.');return;}`
+    + `var t=(document.body.innerText||'').replace(/[ \\t]+/g,' ').replace(/\\n\\s*\\n+/g,'\\n').slice(0,40000);`
+    + `window.open(U+'#effecti='+encodeURIComponent(JSON.stringify({u:location.href,t:t})),'painelLicitacoes');})();`;
+  $('bmEffecti').href = 'javascript:' + encodeURIComponent(codigo);
+  $('bmEffecti').addEventListener('click', e => { e.preventDefault(); alert('Não clique aqui: arraste este botão para a barra de favoritos.'); });
+  if (location.protocol === 'file:')
+    $('effectiAviso').innerHTML = '⚠ Você abriu o painel como arquivo do computador. Para o favorito funcionar, abra o painel pelo endereço publicado (https://…) e arraste o botão de lá.';
+  $('btnEffectiAjuda').addEventListener('click', () => $('effectiAjuda').classList.toggle('hide'));
+  window.name = 'painelLicitacoes';
+})();
+
 /* ---------- login ---------- */
 function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prompt: TOKEN ? '' : 'consent' }); }
 async function aposLogin() {
@@ -1463,6 +1562,8 @@ $('btnAmanha').addEventListener('click', () => { $('dt').value = hojeIso(1); bus
 
 carregarCfgCotacao();
 [...$('d_chips').children].forEach(x => x.setAttribute('aria-pressed', x.dataset.p === 'tudo'));
+
+lerHashEffecti();
 
 (function esperaGoogle() {
   if (window.google && google.accounts && google.accounts.oauth2) boot();
