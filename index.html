@@ -175,6 +175,24 @@ a { color: var(--link); text-decoration: none; } a:hover { text-decoration: unde
 .acc-body th { padding: 8px 18px; }
 .acc-body td { padding: 9px 18px; }
 
+/* dashboard */
+.barh { display: grid; grid-template-columns: minmax(130px, 36%) 1fr 96px; gap: 12px; align-items: center; padding: 8px 18px; }
+.barh:hover { background: var(--hover); }
+.barh .nome { font-size: 12.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barh .track { height: 9px; background: var(--surface-3); border-radius: 999px; overflow: hidden; border: 1px solid var(--border-soft); }
+.barh .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--ok), var(--link)); }
+.barh .vlr { text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text); font-weight: 620; }
+.barh .vlr small { color: var(--muted); font-weight: 450; }
+.mchart { display: flex; align-items: flex-end; gap: 7px; height: 200px; padding: 20px 18px 14px; overflow-x: auto; }
+.mcol { flex: 1 0 44px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; }
+.mcol .qtd { font-size: 11.5px; font-weight: 640; font-variant-numeric: tabular-nums; }
+.mbar { width: 100%; min-height: 3px; border-radius: 7px 7px 0 0; background: linear-gradient(180deg, var(--ok), rgba(127,214,164,.3)); }
+.mcol .mlbl { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button { padding: 6px 13px; font-size: 12px; background: var(--ghost-bg); color: var(--ghost-fg); border: 1px solid var(--border); }
+.chips button[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--btn-shadow); border-color: transparent; }
+.dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+
 #setup { max-width: 640px; margin: 50px auto; }
 #setup p { color: var(--text-2); margin: 0 0 14px; }
 #setup input { width: 100%; border-radius: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
@@ -223,6 +241,7 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
     <button data-v="minuta">Minuta de propostas</button>
     <button data-v="agenda">Agenda</button>
     <button data-v="produtos">Produtos<span class="badge" id="badgeProd"></span></button>
+    <button data-v="dashboard">Dashboard</button>
   </div>
 
   <!-- ============ AGENDA ============ -->
@@ -375,6 +394,59 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
       <div id="listaProd"><div class="empty">Carregando…</div></div>
     </div>
   </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div id="v-dashboard" class="hide">
+    <h1>Dashboard<br><span>licitações que você participou</span></h1>
+    <div class="sub">Baseado na primeira aba da planilha. Cada pregão conta como uma participação.</div>
+
+    <div class="bar">
+      <label for="d_de">De</label>
+      <input type="date" id="d_de">
+      <label for="d_ate">Até</label>
+      <input type="date" id="d_ate">
+      <div class="chips" id="d_chips">
+        <button data-p="mes">Este mês</button>
+        <button data-p="3m">Últimos 3 meses</button>
+        <button data-p="ano">Este ano</button>
+        <button data-p="tudo">Tudo</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-ghost" id="d_recarregar">Recarregar</button>
+    </div>
+
+    <div id="dmsg"></div>
+    <div class="cards" id="dCards"></div>
+
+    <div class="panel">
+      <h2>Participações por mês <span class="hint" id="dMesHint"></span></h2>
+      <div id="dMes"><div class="empty">—</div></div>
+    </div>
+
+    <div class="dgrid">
+      <div class="panel">
+        <h2>Órgãos mais disputados <span class="hint">por nº de licitações</span></h2>
+        <div id="dOrgaos" style="padding:10px 0"><div class="empty">—</div></div>
+      </div>
+      <div class="panel">
+        <h2>Produtos mais ofertados <span class="hint">por nº de itens</span></h2>
+        <div id="dProdutos" style="padding:10px 0"><div class="empty">—</div></div>
+      </div>
+      <div class="panel">
+        <h2>Marcas mais ofertadas <span class="hint">por nº de itens</span></h2>
+        <div id="dMarcas" style="padding:10px 0"><div class="empty">—</div></div>
+      </div>
+      <div class="panel">
+        <h2>Portais / origem <span class="hint">pela coluna UASG</span></h2>
+        <div id="dPortais"><div class="empty">—</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Resumo por mês</h2>
+      <div id="dTabela"><div class="empty">—</div></div>
+    </div>
+  </div>
 </div>
 
 <datalist id="dlSkus"></datalist>
@@ -412,11 +484,12 @@ document.querySelectorAll('.themes').forEach(box => box.addEventListener('click'
 aplicarTema(ls.get('painel-lic-tema') || 'paymark');
 
 function mostrarView(v) {
-  ['agenda','proposta','minuta','produtos'].forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
+  ['agenda','proposta','minuta','produtos','dashboard'].forEach(x => $('v-' + x).classList.toggle('hide', x !== v));
   [...$('nav').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
   if ((v === 'proposta' || v === 'produtos') && !PRODUTOS.length) carregarProdutos();
   if (v === 'minuta') renderMinuta();
   if (v === 'agenda' && !GRUPOS.length) buscar();
+  if (v === 'dashboard') renderDashboard();
 }
 $('nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) mostrarView(b.dataset.v); });
 
@@ -1111,6 +1184,137 @@ async function salvarProduto() {
 }
 $('btnSalvarProduto').addEventListener('click', salvarProduto);
 
+/* ---------- dashboard ---------- */
+const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const setDMsg = (t,tipo) => $('dmsg').innerHTML = t ? `<div class="msg ${tipo||''}">${t}</div>` : '';
+
+function periodoPreset(p) {
+  const h = new Date(); const y = h.getFullYear(), m = h.getMonth();
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (p === 'mes')  return [fmt(new Date(y, m, 1)), fmt(new Date(y, m+1, 0))];
+  if (p === '3m')   return [fmt(new Date(y, m-2, 1)), fmt(new Date(y, m+1, 0))];
+  if (p === 'ano')  return [fmt(new Date(y, 0, 1)), fmt(new Date(y, 11, 31))];
+  return ['', ''];
+}
+$('d_chips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const [de, ate] = periodoPreset(b.dataset.p);
+  $('d_de').value = de; $('d_ate').value = ate;
+  [...$('d_chips').children].forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderDashboard();
+});
+$('d_de').addEventListener('change', () => { [...$('d_chips').children].forEach(x => x.setAttribute('aria-pressed','false')); renderDashboard(); });
+$('d_ate').addEventListener('change', () => { [...$('d_chips').children].forEach(x => x.setAttribute('aria-pressed','false')); renderDashboard(); });
+$('d_recarregar').addEventListener('click', () => renderDashboard(true));
+
+function barras(dados, alvo, sufixo) {
+  if (!dados.length) { $(alvo).innerHTML = '<div class="empty">Sem dados no período.</div>'; return; }
+  const max = Math.max(...dados.map(d => d.v)) || 1;
+  $(alvo).innerHTML = dados.map(d => `<div class="barh" title="${esc(d.n)}">
+      <div class="nome">${esc(d.n)}</div>
+      <div class="track"><div class="fill" style="width:${Math.max(3, d.v / max * 100)}%"></div></div>
+      <div class="vlr">${d.v}${d.extra ? ` <small>${d.extra}</small>` : (sufixo ? ` <small>${sufixo}</small>` : '')}</div>
+    </div>`).join('');
+}
+function topN(mapa, n) {
+  return [...mapa.entries()].map(([k,v]) => ({ n: k, v })).sort((a,b) => b.v - a.v).slice(0, n);
+}
+function classificaPortal(uasg) {
+  const u = limpar(uasg).toUpperCase();
+  if (!u) return 'Não informado';
+  if (u === 'BLL') return 'BLL';
+  if (u === 'CP') return 'Compras Públicas';
+  if (/^\d+$/.test(u)) return 'ComprasNet';
+  return u;
+}
+
+async function renderDashboard(forcar) {
+  if (!PLANILHA || forcar) {
+    $('dCards').innerHTML = '';
+    $('dMes').innerHTML = '<div class="empty">Lendo a planilha…</div>';
+    try { await carregarPlanilha(); } catch (e) { setDMsg('Não consegui ler: ' + esc(e.message), 'err'); return; }
+    setDMsg('');
+  }
+  const de = $('d_de').value, ate = $('d_ate').value;
+  let grupos = agrupar(PLANILHA.filter(i => i.pregao));
+  if (de)  grupos = grupos.filter(g => brParaIso(g.data) >= de);
+  if (ate) grupos = grupos.filter(g => brParaIso(g.data) <= ate);
+
+  const validos = grupos.filter(g => !g.suspenso);
+  const suspensos = grupos.length - validos.length;
+  const itens = validos.reduce((a,g) => a + g.itens, 0);
+  const soma = validos.reduce((a,g) => a + g.limite, 0);
+  const orgaos = new Set(validos.map(g => g.orgao)).size;
+  const mediaItens = validos.length ? (itens / validos.length) : 0;
+  const ticket = validos.length ? (soma / validos.length) : 0;
+
+  const rotulo = de || ate
+    ? `${de ? isoParaBR(de) : 'início'} até ${ate ? isoParaBR(ate) : 'hoje'}`
+    : 'todo o histórico';
+
+  $('dCards').innerHTML = `
+    <div class="card"><div class="lbl">Licitações participadas</div><div class="val">${validos.length}</div></div>
+    <div class="card"><div class="lbl">Itens ofertados</div><div class="val">${itens}</div></div>
+    <div class="card"><div class="lbl">Órgãos distintos</div><div class="val">${orgaos}</div></div>
+    <div class="card ok"><div class="lbl">Soma dos limites</div><div class="val sm">${fmtBRL(soma)}</div></div>
+    <div class="card"><div class="lbl">Média de itens</div><div class="val">${mediaItens.toFixed(1).replace('.', ',')}</div></div>
+    <div class="card"><div class="lbl">Ticket médio</div><div class="val sm">${fmtBRL(ticket)}</div></div>
+    ${suspensos ? `<div class="card pend"><div class="lbl">Suspensos</div><div class="val">${suspensos}</div></div>` : ''}`;
+
+  /* por mês */
+  const porMes = new Map();
+  validos.forEach(g => {
+    const iso = brParaIso(g.data); if (!iso) return;
+    const k = iso.slice(0, 7);
+    if (!porMes.has(k)) porMes.set(k, { p: 0, i: 0, v: 0 });
+    const o = porMes.get(k); o.p++; o.i += g.itens; o.v += g.limite;
+  });
+  const meses = [...porMes.entries()].sort((a,b) => a[0].localeCompare(b[0]));
+  $('dMesHint').textContent = rotulo;
+  if (!meses.length) {
+    $('dMes').innerHTML = '<div class="empty">Nenhuma licitação no período.</div>';
+    $('dTabela').innerHTML = '<div class="empty">—</div>';
+  } else {
+    const maxP = Math.max(...meses.map(m => m[1].p));
+    $('dMes').innerHTML = `<div class="mchart">${meses.map(([k,v]) => {
+      const [ano, mm] = k.split('-');
+      return `<div class="mcol" title="${v.p} licitação(ões) · ${v.i} itens · ${fmtBRL(v.v)}">
+        <div class="qtd">${v.p}</div>
+        <div class="mbar" style="height:${Math.max(4, v.p / maxP * 100)}%"></div>
+        <div class="mlbl">${MESES[Number(mm)-1]}/${ano.slice(2)}</div>
+      </div>`; }).join('')}</div>`;
+    $('dTabela').innerHTML = `<table><thead><tr><th>Mês</th><th class="num">Licitações</th><th class="num">Itens</th>
+      <th class="num">Soma dos limites</th><th class="num">Ticket médio</th></tr></thead><tbody>
+      ${meses.slice().reverse().map(([k,v]) => { const [ano,mm] = k.split('-');
+        return `<tr><td class="org">${MESES[Number(mm)-1]}/${ano}</td><td class="num">${v.p}</td><td class="num">${v.i}</td>
+        <td class="num">${fmtBRL(v.v)}</td><td class="num">${fmtBRL(v.v / v.p)}</td></tr>`; }).join('')}
+      </tbody><tfoot><tr><td>Total</td><td class="num">${validos.length}</td><td class="num">${itens}</td>
+      <td class="num">${fmtBRL(soma)}</td><td class="num">${fmtBRL(ticket)}</td></tr></tfoot></table>`;
+  }
+
+  /* rankings */
+  const mOrg = new Map(), mSku = new Map(), mMarca = new Map(), mPortal = new Map();
+  validos.forEach(g => {
+    mOrg.set(g.orgao, (mOrg.get(g.orgao) || 0) + 1);
+    const pt = classificaPortal(g.uasg);
+    mPortal.set(pt, (mPortal.get(pt) || 0) + 1);
+    g.lista.forEach(it => {
+      if (it.sku) mSku.set(it.sku + (it.descricao ? ' — ' + it.descricao.slice(0, 42) : ''), (mSku.get(it.sku + (it.descricao ? ' — ' + it.descricao.slice(0, 42) : '')) || 0) + 1);
+      if (it.marca) mMarca.set(it.marca, (mMarca.get(it.marca) || 0) + 1);
+    });
+  });
+  barras(topN(mOrg, 10), 'dOrgaos', 'lic.');
+  barras(topN(mSku, 10), 'dProdutos', 'itens');
+  barras(topN(mMarca, 10), 'dMarcas', 'itens');
+
+  const portais = topN(mPortal, 20);
+  $('dPortais').innerHTML = portais.length
+    ? `<table><thead><tr><th>Origem</th><th class="num">Licitações</th><th class="num">%</th></tr></thead><tbody>
+       ${portais.map(p => `<tr><td class="org">${esc(p.n)}</td><td class="num">${p.v}</td>
+         <td class="num">${(p.v / validos.length * 100).toFixed(0)}%</td></tr>`).join('')}</tbody></table>`
+    : '<div class="empty">Sem dados no período.</div>';
+}
+
 /* ---------- login ---------- */
 function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prompt: TOKEN ? '' : 'consent' }); }
 async function aposLogin() {
@@ -1156,6 +1360,7 @@ $('btnHoje').addEventListener('click', () => { $('dt').value = hojeIso(0); busca
 $('btnAmanha').addEventListener('click', () => { $('dt').value = hojeIso(1); buscar(); });
 
 carregarCfgCotacao();
+[...$('d_chips').children].forEach(x => x.setAttribute('aria-pressed', x.dataset.p === 'tudo'));
 
 (function esperaGoogle() {
   if (window.google && google.accounts && google.accounts.oauth2) boot();
