@@ -174,6 +174,9 @@ a { color: var(--link); text-decoration: none; } a:hover { text-decoration: unde
 .acc-body table { font-size: 12.5px; }
 .acc-body th { padding: 8px 18px; }
 .acc-body td { padding: 9px 18px; }
+input.mini { width: 92px; padding: 5px 8px; border-radius: 8px; text-align: right; font-size: 12.5px; }
+input.mini.qtd { width: 70px; }
+.min-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 18px 8px; border-top: 1px solid var(--border-soft); }
 
 /* dashboard */
 .barh { display: grid; grid-template-columns: minmax(130px, 36%) 1fr 96px; gap: 12px; align-items: center; padding: 8px 18px; }
@@ -347,6 +350,8 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
         <option value="futuros">De hoje em diante</option>
         <option value="passados">Anteriores a hoje</option>
       </select>
+      <input type="date" id="dataMinuta" title="Mostrar só os pregões deste dia" aria-label="Dia da disputa" style="border-radius:999px">
+      <button class="btn-ghost btn-mini hide" id="limparDataMinuta" title="Voltar a mostrar todos os dias">× limpar dia</button>
       <button class="btn-ghost" id="btnRecarregarMinuta">Recarregar</button>
       <div class="spacer"></div>
       <button class="btn-ghost btn-mini" id="btnExpandir">Expandir tudo</button>
@@ -623,7 +628,7 @@ async function nomesAbas() {
 }
 async function carregarPlanilha() {
   await nomesAbas();
-  const dados = await api(rangeUrl(ABA1, 'A1:T2000') + '?valueRenderOption=FORMATTED_VALUE');
+  const dados = await api(rangeUrl(ABA1, 'A1:AZ2000') + '?valueRenderOption=FORMATTED_VALUE');
   const rows = dados.values || [];
   const hi = rows.findIndex(r => r.indexOf('Link Effecti') !== -1);
   if (hi === -1) throw new Error('Cabeçalho "Link Effecti" não encontrado na aba "' + ABA1 + '".');
@@ -646,7 +651,7 @@ async function carregarPlanilha() {
       custo: moeda(r[IDX1['Custo Unit. (R$)']]),
       margem: col(r,'Margem %'),
       limite: moeda(r[IDX1['LIMITE MÁX. LANCE (R$)']]),
-      obs: col(r,'Observações'),
+      obs: col(r,'Observações'), qtd: col(r,'Quantidade'), unid: col(r,'Unidade'),
       suspenso: /SUSPENSO/i.test(orgao), semNumero: !pregao
     });
   });
@@ -826,6 +831,7 @@ async function renderMinuta(forcar) {
   grupos.sort((a,b) => brParaIso(b.data).localeCompare(brParaIso(a.data)) || a.orgao.localeCompare(b.orgao));
   if (filtro === 'futuros') grupos = grupos.filter(g => brParaIso(g.data) >= brParaIso(hojeBR));
   if (filtro === 'passados') grupos = grupos.filter(g => brParaIso(g.data) < brParaIso(hojeBR));
+  if ($('dataMinuta').value) { const dia = isoParaBR($('dataMinuta').value); grupos = grupos.filter(g => g.data === dia); }
   if (busca) grupos = grupos.filter(g => (g.orgao + ' ' + g.pregao + ' ' + g.uasg).toUpperCase().includes(busca));
 
   const totItens = grupos.reduce((a,g) => a + g.itens, 0);
@@ -851,9 +857,10 @@ async function renderMinuta(forcar) {
         <td>${esc(it.descricao) || '<span class="muted">—</span>'}</td>
         <td>${esc(it.marca) || '—'}</td>
         <td>${esc(it.modelo) || '—'}</td>
-        <td class="num">${it.custo ? fmtBRL(it.custo) : '—'}</td>
-        <td class="num">${esc(it.margem) || '—'}</td>
-        <td class="num" style="color:var(--ok);font-weight:600">${it.limite ? fmtBRL(it.limite) : '—'}</td>
+        <td class="num"><input class="mini qtd" data-l="${it.linha}" data-c="qtd" value="${esc(valMin(it,'qtd'))}" placeholder="—" title="${esc(it.unid || 'Quantidade')}"></td>
+        <td class="num"><input class="mini" data-l="${it.linha}" data-c="custo" value="${esc(valMin(it,'custo'))}" placeholder="0,00"></td>
+        <td class="num"><input class="mini qtd" data-l="${it.linha}" data-c="margem" value="${esc(valMin(it,'margem'))}" placeholder="30"></td>
+        <td class="num"><input class="mini" data-l="${it.linha}" data-c="limite" value="${esc(valMin(it,'limite'))}" placeholder="0,00" style="color:var(--ok);font-weight:600"></td>
         <td class="num">${it.ref ? fmtBRL(it.ref) : '<span class="muted">—</span>'}</td>
         <td>${esc(it.obs) || '<span class="muted">—</span>'}</td>
       </tr>`).join('');
@@ -872,15 +879,26 @@ async function renderMinuta(forcar) {
       <div class="acc-body">
         <table><thead><tr>
           <th class="num">Item</th><th>SKU</th><th>Descrição</th><th>Marca</th><th>Modelo</th>
-          <th class="num">Custo</th><th class="num">Margem</th><th class="num">Limite máx.</th>
+          <th class="num">Qtd.</th><th class="num">Custo (R$)</th><th class="num">Margem %</th><th class="num">Limite máx. (R$)</th>
           <th class="num">Vlr. referência</th><th>Observações</th>
         </tr></thead><tbody>${itensHtml}</tbody></table>
+        <div class="min-bar">
+          <span class="muted" data-conta style="font-size:12.5px;flex:1"></span>
+          <button class="btn-ghost btn-mini" data-desfazer="${esc(g.chave)}" disabled>Desfazer</button>
+          <button class="btn-go btn-mini" data-salvar="${esc(g.chave)}" disabled>Salvar alterações</button>
+        </div>
       </div>
     </div>`;
   }).join('');
+  grupos.forEach(g => atualizarBarraMinuta(g.chave));
 }
 $('minutaLista').addEventListener('click', e => {
   if (e.target.closest('a')) return;
+  const sv = e.target.closest('button[data-salvar]');
+  if (sv) { sv.disabled = true; salvarEdicoesMinuta(sv.dataset.salvar); return; }
+  const dz = e.target.closest('button[data-desfazer]');
+  if (dz) { const g = agrupar(PLANILHA.filter(i => i.pregao)).find(x => x.chave === dz.dataset.desfazer);
+    if (g) g.lista.forEach(it => EDIT_MIN.delete(it.linha)); renderMinuta(); return; }
   const del = e.target.closest('button[data-del]');
   if (del) { e.stopPropagation(); apagarPregao(del.dataset.del); return; }
   const head = e.target.closest('.acc-head'); if (!head) return;
@@ -916,6 +934,82 @@ async function apagarPregao(chave) {
     setMMsg(`${linhas.length} linha(s) excluída(s). <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
   } catch (e) { setMMsg('Não consegui excluir: ' + esc(e.message), 'err'); }
 }
+/* ---------- edição dos itens salvos (Minuta) ----------
+   As mudanças ficam guardadas aqui até clicar em "Salvar alterações" no pregão. */
+const EDIT_MIN = new Map();   // nº da linha na planilha -> { custo, margem, limite, qtd, limiteAuto }
+const margemNum = s => parseFloat(String(s == null ? '' : s).replace('%', '').replace(',', '.')) || 0;
+function valMin(it, campo) {
+  const e = EDIT_MIN.get(it.linha);
+  if (e && e[campo] !== undefined) return e[campo];
+  if (campo === 'custo') return it.custo ? numBR(it.custo) : '';
+  if (campo === 'margem') return String(it.margem || '').replace('%', '').trim();
+  if (campo === 'limite') return it.limite ? numBR(it.limite) : '';
+  return it.qtd || '';
+}
+function atualizarBarraMinuta(chave) {
+  const acc = [...document.querySelectorAll('#minutaLista .acc')].find(a => a.dataset.k === chave); if (!acc) return;
+  const linhas = [...acc.querySelectorAll('input[data-l]')].map(i => Number(i.dataset.l));
+  const n = new Set(linhas.filter(l => EDIT_MIN.has(l))).size;
+  acc.querySelector('[data-conta]').textContent = n ? `${n} item(ns) alterado(s), ainda não salvo(s)` : 'Altere quantidade, custo, margem ou limite direto na tabela.';
+  acc.querySelector('[data-salvar]').disabled = !n;
+  acc.querySelector('[data-desfazer]').disabled = !n;
+}
+$('minutaLista').addEventListener('input', e => {
+  const inp = e.target.closest('input[data-l]'); if (!inp) return;
+  const linha = Number(inp.dataset.l), campo = inp.dataset.c;
+  const it = PLANILHA.find(x => x.linha === linha); if (!it) return;
+  const ed = EDIT_MIN.get(linha) || {};
+  ed[campo] = inp.value;
+  EDIT_MIN.set(linha, ed);
+  if (campo === 'custo' || campo === 'margem') {   // limite acompanha custo e margem
+    const custo = moeda(valMin(it, 'custo')), mg = margemNum(valMin(it, 'margem'));
+    ed.limite = custo ? numBR(custo * (1 + mg / 100)) : '';
+    ed.limiteAuto = true;
+    const li = inp.closest('tr').querySelector('input[data-c="limite"]'); if (li) li.value = ed.limite;
+  }
+  if (campo === 'limite') ed.limiteAuto = false;
+  EDIT_MIN.set(linha, ed);
+  atualizarBarraMinuta(inp.closest('.acc').dataset.k);
+});
+async function salvarEdicoesMinuta(chave) {
+  const g = agrupar(PLANILHA.filter(i => i.pregao)).find(x => x.chave === chave); if (!g) return;
+  const mud = g.lista.filter(it => EDIT_MIN.has(it.linha)); if (!mud.length) return;
+  setMMsg(`Gravando ${mud.length} item(ns) alterado(s)…`);
+  try {
+    await nomesAbas();
+    // se o limite da planilha é uma fórmula, não sobrescrevemos: ela recalcula sozinha com o novo custo/margem
+    const ciL = IDX1['LIMITE MÁX. LANCE (R$)'], formula = {};
+    if (ciL !== undefined) {
+      const ls_ = mud.map(i => i.linha), L = colLetra(ciL);
+      const lido = await api(rangeUrl(ABA1, `${L}${Math.min(...ls_)}:${L}${Math.max(...ls_)}`) + '?valueRenderOption=FORMULA');
+      (lido.values || []).forEach((r, k) => { formula[Math.min(...ls_) + k] = String((r || [])[0] || '').startsWith('='); });
+    }
+    const data = [], semColuna = new Set();
+    for (const it of mud) {
+      const e = EDIT_MIN.get(it.linha);
+      const put = (nome, v) => { const ci = IDX1[nome];
+        if (ci === undefined) { semColuna.add(nome); return; }
+        data.push({ range: `'${ABA1}'!${colLetra(ci)}${it.linha}`, values: [[v]] }); };
+      if (e.qtd !== undefined) put('Quantidade', limpar(e.qtd));
+      if (e.custo !== undefined) put('Custo Unit. (R$)', numBR(moeda(e.custo)));
+      if (e.margem !== undefined) put('Margem %', String(margemNum(e.margem)).replace('.', ',') + '%');
+      if (e.limite !== undefined && !(e.limiteAuto && formula[it.linha])) put('LIMITE MÁX. LANCE (R$)', e.limite ? numBR(moeda(e.limite)) : '');
+    }
+    if (data.length) await api(`https://sheets.googleapis.com/v4/spreadsheets/${FILE_ID}/values:batchUpdate`, {
+      method: 'POST', body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data }) });
+    mud.forEach(it => EDIT_MIN.delete(it.linha));
+    await renderMinuta(true);
+    setMMsg(`${mud.length} item(ns) atualizado(s) na planilha.`
+      + (semColuna.size ? ` <b>Não gravado:</b> ${[...semColuna].map(esc).join(', ')} — crie essa coluna na primeira aba para guardar.` : '')
+      + ` <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, semColuna.size ? 'warn' : 'ok');
+  } catch (e) { setMMsg('Não consegui gravar: ' + esc(e.message), 'err'); }
+}
+$('dataMinuta').addEventListener('change', () => {
+  $('limparDataMinuta').classList.toggle('hide', !$('dataMinuta').value);
+  if ($('dataMinuta').value) $('filtroMinuta').value = 'todos';
+  renderMinuta();
+});
+$('limparDataMinuta').addEventListener('click', () => { $('dataMinuta').value = ''; $('limparDataMinuta').classList.add('hide'); renderMinuta(); });
 $('buscaMinuta').addEventListener('input', () => renderMinuta());
 $('filtroMinuta').addEventListener('change', () => renderMinuta());
 $('btnRecarregarMinuta').addEventListener('click', () => renderMinuta(true));
