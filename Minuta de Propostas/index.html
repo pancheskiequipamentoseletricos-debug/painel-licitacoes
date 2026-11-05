@@ -198,6 +198,16 @@ a { color: var(--link); text-decoration: none; } a:hover { text-decoration: unde
 #setup input { width: 100%; border-radius: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
 code { background: var(--surface-2); border: 1px solid var(--border-soft); padding: 1px 6px; border-radius: 6px; font-size: 12.5px; }
 .hide { display: none !important; }
+.modal-ov { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal { background: var(--bg); border: 1px solid var(--border); border-radius: 18px; padding: 20px 22px; width: min(860px, 100%); max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.modal h2 { margin: 0 0 12px; font-size: 15px; }
+.sel-todos { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+.sel-lista { overflow: auto; flex: 1; }
+.sel-item { display: grid; grid-template-columns: 18px 70px 1fr auto; gap: 10px; align-items: start; padding: 10px 4px; border-bottom: 1px solid var(--border-soft); font-size: 12.5px; cursor: pointer; }
+.sel-item input, .sel-todos input { width: 16px; height: 16px; padding: 0; margin-top: 1px; }
+.sel-desc { color: var(--text-2); }
+.sel-qtd { white-space: nowrap; font-weight: 620; }
+.edital { font-size: 12px; color: var(--muted); margin: 0 0 12px; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -920,9 +930,13 @@ $('btnExpandir').addEventListener('click', () => {
 });
 
 /* ---------- gerar proposta ---------- */
+function novoItem() {
+  return { id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null,
+    manual: false, desc: '', marca: '', modelo: '', custo: '', catalogar: false,
+    qtd: '', unid: '', descEdital: '', descProp: '' };
+}
 function addItem(dados) {
-  ITENS.push(Object.assign({ id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null,
-    manual: false, desc: '', marca: '', modelo: '', custo: '', catalogar: false }, dados || {}));
+  ITENS.push(Object.assign(novoItem(), dados || {}));
   renderItens();
 }
 /* valores efetivos do item: do catálogo ou digitados à mão */
@@ -932,7 +946,7 @@ function dadosItem(it) {
     modelo: limpar(it.modelo), custo: moeda(it.custo), doCatalogo: false
   };
   if (it.prod) return {
-    sku: it.prod.sku, descricao: it.prod.descricao, marca: it.prod.marca,
+    sku: it.prod.sku, descricao: limpar(it.descProp) || it.prod.descricao, marca: it.prod.marca,
     modelo: it.prod.modelo, custo: it.prod.custo, doCatalogo: true
   };
   return null;
@@ -967,12 +981,18 @@ function renderItens() {
       </div>
       ${s && s.nivel === 'vencida' ? `<div class="msg err" style="margin:0 0 12px;padding:9px 13px;font-size:12.5px">Custo cotado em ${esc(it.prod.dtCotacao)} — ${s.dias} dias atrás. Confirme o preço com o fornecedor antes de lançar a proposta.</div>` : ''}
       ${skuDigitadoSemMatch ? `<div class="msg warn" style="margin:0 0 12px;padding:9px 13px;font-size:12.5px">Código <strong>${esc(it.sku)}</strong> não está no catálogo. Clique em <strong>preencher à mão</strong> para digitar descrição e custo deste item.</div>` : ''}
+      ${it.descEdital ? `<div class="edital"><b>No edital:</b> ${esc(it.descEdital)}${it.qtd ? ` · <b>${esc(it.qtd)} ${esc(it.unid)}</b>` : ''}</div>` : ''}
       <div class="grid g5">
         <div class="fld"><label>Item nº</label><input type="text" data-f="num" value="${esc(it.num)}" placeholder="1"></div>
         <div class="fld"><label>Cód. Produto (SKU)</label><input type="text" data-f="sku" value="${esc(it.sku)}" ${it.manual ? '' : 'list="dlSkus"'} placeholder="${it.manual ? 'opcional' : '84044'}" spellcheck="false"></div>
+        <div class="fld"><label>Quantidade</label><input type="text" data-f="qtd" value="${esc(it.qtd)}" placeholder="300"></div>
         <div class="fld"><label>Valor de Referência</label><input type="text" data-f="ref" value="${esc(it.ref)}" placeholder="1.500,00"></div>
         <div class="fld"><label>Margem %</label><input type="text" data-f="margem" value="${esc(it.margem)}"></div>
       </div>
+      ${achouSku ? `
+      <div class="grid g5" style="margin-top:12px">
+        <div class="fld" style="grid-column:1/-1"><label>Descrição na proposta <span style="text-transform:none;letter-spacing:0">(veio do catálogo · pode editar)</span></label><input type="text" data-f="descProp" value="${esc(it.descProp || it.prod.descricao)}"></div>
+      </div>` : ''}
       ${it.manual ? `
       <div class="grid g5" style="margin-top:12px">
         <div class="fld" style="grid-column:1/-1"><label>Descrição do item *</label><input type="text" data-f="desc" value="${esc(it.desc)}" placeholder="Descreva o produto como vai na proposta"></div>
@@ -1002,9 +1022,9 @@ $('itens').addEventListener('input', e => {
   const it = ITENS.find(x => x.id === Number(inp.closest('.itemrow').dataset.id)); if (!it) return;
   const campo = inp.dataset.f;
   it[campo] = inp.type === 'checkbox' ? inp.checked : inp.value;
-  if (campo === 'sku' && !it.manual) { it.prod = acharProduto(inp.value); renderItensPreservando(it.id, 'sku'); }
+  if (campo === 'sku' && !it.manual) { it.prod = acharProduto(inp.value); it.descProp = ''; renderItensPreservando(it.id, 'sku'); }
   else if (campo === 'margem' || campo === 'custo') renderItensPreservando(it.id, campo);
-  else if (campo === 'desc' || campo === 'marca' || campo === 'modelo') { atualizarPreview(it.id); atualizarResumo(); }
+  else if (campo === 'desc' || campo === 'descProp' || campo === 'marca' || campo === 'modelo') { atualizarPreview(it.id); atualizarResumo(); }
   else atualizarResumo();
 });
 $('itens').addEventListener('click', e => {
@@ -1015,9 +1035,10 @@ $('itens').addEventListener('click', e => {
     const it = ITENS.find(x => x.id === Number(md.dataset.modo)); if (!it) return;
     it.manual = !it.manual;
     if (it.manual && it.prod) {   // leva os dados do catálogo para os campos editáveis
-      it.desc = it.desc || it.prod.descricao; it.marca = it.marca || it.prod.marca;
+      it.desc = it.desc || limpar(it.descProp) || it.prod.descricao; it.marca = it.marca || it.prod.marca;
       it.modelo = it.modelo || it.prod.modelo; it.custo = it.custo || numBR(it.prod.custo);
     }
+    if (it.manual && !it.desc && it.descEdital) it.desc = it.descEdital;   // sem produto: começa pela descrição do edital
     if (!it.manual) it.prod = acharProduto(it.sku);
     renderItens();
   }
@@ -1091,6 +1112,8 @@ async function salvarProposta() {
       set('Item nº', it.num);
       set('Cód. Produto (SKU)', d.sku);
       set('Valor de Referência', it.ref ? numBR(moeda(it.ref)) : '');
+      set('Quantidade', limpar(it.qtd));
+      set('Unidade', limpar(it.unid));
       return row;
     });
     const resp = await api(rangeUrl(ABA1, `A${LINHA_HDR1}:${colLetra(HDR1.length-1)}`)
@@ -1473,6 +1496,68 @@ function extrairEffecti(texto) {
   r.disputa = df ? `${df[3]}-${df[2]}-${df[1]}` : '';
   return r;
 }
+/* Itens do aviso. O favorito novo já manda a tabela pronta (d.i). Para o favorito antigo,
+   que só manda o texto, lemos as linhas: nº do item, descrição, "Não/Sim", "Não/Sim 300 Unidade". */
+function extrairItensEffecti(d) {
+  let lista = [];
+  if (Array.isArray(d.i) && d.i.length) {
+    lista = d.i.map(x => ({ num: limpar(x.n), desc: limpar(x.d), qtd: limpar(x.q), unid: limpar(x.u) }));
+  } else {
+    const L = String(d.t || '').split(/\n/).map(limpar).filter(Boolean);
+    for (let i = 0; i < L.length; i++) {
+      const mn = L[i].match(/^(?:\S+\s+)?(\d{1,4})$/);
+      if (!mn) continue;
+      for (let j = i + 1; j < Math.min(L.length - 1, i + 15); j++) {
+        const mq = L[j+1].match(/^(Sim|Não)\s+([\d.,]+)\s+(.+)$/i);
+        if (/^(Sim|Não)$/i.test(L[j]) && mq) {
+          if (j > i + 1) lista.push({ num: mn[1], desc: L.slice(i+1, j).join(' '), qtd: mq[2], unid: mq[3] });
+          i = j + 1; break;
+        }
+      }
+    }
+  }
+  const vistos = new Set();
+  return lista.filter(x => x.num && !vistos.has(x.num) && vistos.add(x.num))
+    .sort((a,b) => (parseInt(a.num)||0) - (parseInt(b.num)||0));
+}
+function abrirSeletorItens(lista) {
+  let ov = $('selItens');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'selItens'; ov.className = 'modal-ov'; document.body.appendChild(ov); }
+  ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="selTit">
+    <h2 id="selTit">Itens do aviso <span class="hint">${lista.length} encontrado(s) · marque os que vão nesta proposta</span></h2>
+    <label class="sel-todos"><input type="checkbox" id="selTodos"> Selecionar todos</label>
+    <div class="sel-lista">${lista.map((x, k) => `
+      <label class="sel-item"><input type="checkbox" data-k="${k}">
+        <b>Item ${esc(x.num)}</b>
+        <span class="sel-desc">${esc(x.desc) || '<span class="muted">sem descrição</span>'}</span>
+        <span class="sel-qtd">${esc(x.qtd) || '—'} ${esc(x.unid)}</span>
+      </label>`).join('')}</div>
+    <div class="bar" style="margin-top:14px">
+      <span class="muted" id="selConta" style="font-size:12.5px">Nenhum selecionado</span>
+      <div class="spacer"></div>
+      <button class="btn-ghost" id="selCancelar" type="button">Não incluir itens</button>
+      <button class="btn-go" id="selOk" type="button" disabled>Adicionar à proposta</button>
+    </div></div>`;
+  ov.classList.remove('hide');
+  const caixas = () => [...ov.querySelectorAll('.sel-item input')];
+  const conta = () => { const n = caixas().filter(c => c.checked).length;
+    $('selConta').textContent = n ? n + ' selecionado(s)' : 'Nenhum selecionado';
+    $('selOk').disabled = !n; $('selTodos').checked = n === lista.length; };
+  ov.onchange = e => { if (e.target.id === 'selTodos') caixas().forEach(c => c.checked = e.target.checked); conta(); };
+  const fechar = () => ov.classList.add('hide');
+  $('selCancelar').onclick = fechar;
+  ov.onclick = e => { if (e.target === ov) fechar(); };
+  $('selOk').onclick = () => {
+    const marcados = caixas().filter(c => c.checked).map(c => lista[Number(c.dataset.k)]);
+    // tira as linhas que ainda estão em branco antes de acrescentar
+    ITENS = ITENS.filter(it => limpar(it.num) || limpar(it.sku) || limpar(it.desc) || it.prod);
+    marcados.forEach(x => ITENS.push(Object.assign(novoItem(), { num: x.num, qtd: x.qtd, unid: x.unid, descEdital: x.desc })));
+    renderItens(); fechar();
+    setPMsg(`${marcados.length} item(ns) do aviso adicionado(s). Digite o código do produto em cada um, ou use <b>preencher à mão</b>.`, 'ok');
+    $('itens').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  conta();
+}
 function aplicarEffecti(d) {
   const r = extrairEffecti(d.t), ok = [], faltou = [];
   const por = (id, valor, nome) => { if (valor) { $(id).value = valor; ok.push(nome); } else faltou.push(nome); };
@@ -1489,6 +1574,8 @@ function aplicarEffecti(d) {
     <textarea readonly style="width:100%;min-height:160px;margin-top:6px;font-size:11.5px">${esc(d.t || '')}</textarea></details></div>`;
   if (TOKEN) mostrarView('proposta');
   $('effectiResultado').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const itens = extrairItensEffecti(d);
+  if (itens.length) abrirSeletorItens(itens);
 }
 function lerHashEffecti() {
   if (!location.hash.startsWith('#effecti=')) return;
@@ -1504,7 +1591,10 @@ window.addEventListener('hashchange', lerHashEffecti);
   const codigo = `(function(){var U=${JSON.stringify(painel)};`
     + `if(!/effecti\\.com\\.br$/.test(location.hostname)){alert('Abra um aviso no Effecti e clique neste favorito lá.');return;}`
     + `var t=(document.body.innerText||'').replace(/[ \\t]+/g,' ').replace(/\\n\\s*\\n+/g,'\\n').slice(0,40000);`
-    + `window.open(U+'#effecti='+encodeURIComponent(JSON.stringify({u:location.href,t:t})),'painelLicitacoes');})();`;
+    + `var I=[],H=null;document.querySelectorAll('tr').forEach(function(tr){var c=[].map.call(tr.children,function(x){return (x.innerText||'').replace(/\\s+/g,' ').trim()});`
+    + `if(c.indexOf('Quantidade')>-1&&c.indexOf('Itens')>-1){H={n:c.indexOf('Itens'),d:c.indexOf('Descrição'),q:c.indexOf('Quantidade'),u:c.indexOf('Unidade')};return;}`
+    + `if(H&&c[H.n])I.push({n:c[H.n],d:c[H.d]||'',q:c[H.q]||'',u:c[H.u]||''});});`
+    + `window.open(U+'#effecti='+encodeURIComponent(JSON.stringify({u:location.href,t:t,i:I})),'painelLicitacoes');})();`;
   $('bmEffecti').href = 'javascript:' + encodeURIComponent(codigo);
   $('bmEffecti').addEventListener('click', e => { e.preventDefault(); alert('Não clique aqui: arraste este botão para a barra de favoritos.'); });
   if (location.protocol === 'file:')
