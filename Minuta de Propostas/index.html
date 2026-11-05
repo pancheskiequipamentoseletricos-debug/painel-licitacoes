@@ -296,6 +296,7 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
           <div class="fld"><label for="p_pregao">Nº do Pregão / Dispensa</label><input type="text" id="p_pregao" placeholder="23/2026"></div>
           <div class="fld"><label for="p_uasg">UASG</label><input type="text" id="p_uasg" placeholder="160518, BLL ou CP"></div>
           <div class="fld"><label for="p_data">Data da Disputa</label><input type="date" id="p_data"></div>
+          <div class="fld"><label for="p_portal">Portal de Captura</label><input type="text" id="p_portal" placeholder="ComprasNet, PNCP, BLL…"></div>
         </div>
       </div>
     </div>
@@ -628,7 +629,7 @@ async function carregarPlanilha() {
     const orgao = col(r,'Órgão / Comprador'), pregao = col(r,'Nº do Pregão / Dispensa');
     itens.push({
       linha: hi + 2 + i, data, orgao, pregao,
-      uasg: col(r,'UASG'), link: col(r,'Link Effecti'),
+      uasg: col(r,'UASG'), link: col(r,'Link Effecti'), portal: col(r,'Portal de Captura'),
       itemNum: col(r,'Item nº'), sku: col(r,'Cód. Produto (SKU)'),
       ref: moeda(r[IDX1['Valor de Referência']]),
       descricao: col(r,'Descrição do Item'), marca: col(r,'Marca'), modelo: col(r,'Modelo'),
@@ -709,9 +710,10 @@ function agrupar(itens) {
   for (const it of itens) {
     const k = [it.data,it.orgao,it.pregao,it.uasg].join('§');
     if (!m.has(k)) m.set(k, { chave: k, data: it.data, orgao: it.orgao, pregao: it.pregao, uasg: it.uasg,
-      link: '', itens: 0, limite: 0, lista: [], suspenso: it.suspenso, semNumero: it.semNumero });
+      link: '', portal: '', itens: 0, limite: 0, lista: [], suspenso: it.suspenso, semNumero: it.semNumero });
     const g = m.get(k); g.itens++; g.limite += it.limite; g.lista.push(it);
     if (!g.link && it.link) g.link = it.link;
+    if (!g.portal && it.portal) g.portal = it.portal;
   }
   return [...m.values()];
 }
@@ -850,7 +852,7 @@ async function renderMinuta(forcar) {
         <span class="chev">▶</span>
         <div class="titulo">
           <b>${esc(g.orgao)} ${susp}</b>
-          <small>${esc(g.data)} · Pregão ${esc(g.pregao)} · UASG ${esc(g.uasg) || '—'}
+          <small>${esc(g.data)} · Pregão ${esc(g.pregao)} · UASG ${esc(g.uasg) || '—'}${g.portal ? ' · ' + esc(g.portal) : ''}
           ${g.link ? ` · <a href="${esc(g.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Effecti</a>` : ''}</small>
         </div>
         <div class="metrica"><span>Itens</span><b>${g.itens}</b></div>
@@ -1053,14 +1055,15 @@ function atualizarResumo() {
 $('btnAddItem').addEventListener('click', () => addItem());
 $('btnLimpar').addEventListener('click', () => {
   if (!confirm('Limpar todos os campos desta proposta?')) return;
-  ['p_link','p_orgao','p_pregao','p_uasg','p_data'].forEach(id => $(id).value = '');
+  ['p_link','p_orgao','p_pregao','p_uasg','p_data','p_portal'].forEach(id => $(id).value = '');
   $('effectiResultado').innerHTML = '';
   ITENS = []; addItem(); setPMsg('');
 });
 
 async function salvarProposta() {
   const cab = { link: $('p_link').value.trim(), orgao: $('p_orgao').value.trim(),
-    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value };
+    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value,
+    portal: $('p_portal').value.trim() };
   if (!cab.orgao || !cab.pregao || !cab.data) { setPMsg('Preencha ao menos Órgão / Comprador, Nº do Pregão e Data da Disputa.', 'warn'); return; }
   const validos = ITENS.filter(itemValido);
   if (!validos.length) { setPMsg('Nenhum item preenchido. Cada item precisa de descrição e custo.', 'warn'); return; }
@@ -1078,7 +1081,8 @@ async function salvarProposta() {
     if (!HDR1.length) await carregarPlanilha();
     const dataBR = isoParaBR(cab.data);
     const manual = { 'Link Effecti': cab.link, 'Órgão / Comprador': cab.orgao,
-      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR };
+      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR,
+      'Portal de Captura': cab.portal };
     const linhas = validos.map(it => {
       const d = dadosItem(it);
       const row = new Array(HDR1.length).fill('');
@@ -1449,7 +1453,10 @@ function extrairEffecti(texto) {
   const iMeus = norm.findIndex(n => n.startsWith('encontre as melhores oportunidades'));
   r.orgao = iEnv > 0 ? linhas[iEnv-1] : (iMeus !== -1 ? linhas[iMeus+1] || '' : '');
 
-  const portal = valor('portal de captura');
+  // "Portal Nacional de Contratações Públicas - PNCP" fica só "PNCP"
+  let portal = valor('portal de captura');
+  if (/pncp|portal nacional de contrata/i.test(portal)) portal = 'PNCP';
+  r.portal = portal;
   const uasg = valor('uasg');
   if (/^\d{4,6}$/.test(uasg)) r.uasg = uasg;
   else if (/bll/i.test(portal)) r.uasg = 'BLL';
@@ -1474,6 +1481,7 @@ function aplicarEffecti(d) {
   por('p_pregao', r.pregao, 'Nº do Pregão');
   por('p_uasg', r.uasg, 'UASG');
   por('p_data', r.disputa, 'Data da Disputa');
+  por('p_portal', r.portal, 'Portal de Captura');
   $('effectiResultado').innerHTML = `<div class="msg ${faltou.length ? 'warn' : 'ok'}">
     <b>Importado do Effecti:</b> ${ok.join(', ') || 'nada'}.
     ${faltou.length ? `<br><b>Não encontrei:</b> ${faltou.join(', ')} — preencha à mão e confira os demais.` : ' Confira antes de salvar.'}
