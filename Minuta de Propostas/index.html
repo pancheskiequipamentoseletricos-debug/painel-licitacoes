@@ -296,7 +296,6 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
           <div class="fld"><label for="p_pregao">Nº do Pregão / Dispensa</label><input type="text" id="p_pregao" placeholder="23/2026"></div>
           <div class="fld"><label for="p_uasg">UASG</label><input type="text" id="p_uasg" placeholder="160518, BLL ou CP"></div>
           <div class="fld"><label for="p_data">Data da Disputa</label><input type="date" id="p_data"></div>
-          <div class="fld"><label for="p_prazo">Prazo para Envio</label><input type="datetime-local" id="p_prazo"></div>
         </div>
       </div>
     </div>
@@ -598,7 +597,7 @@ async function api(url, opts) {
   const r = await fetch(url, Object.assign({}, opts, {
     headers: Object.assign({ Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' }, (opts||{}).headers)
   }));
-  if (r.status === 401) { TOKEN = null; pedirToken(); throw new Error('Sessão expirada — autorize de novo.'); }
+  if (r.status === 401) { TOKEN = null; ls.del('painel-lic-token'); pedirToken(); throw new Error('Sessão expirada — autorize de novo.'); }
   if (!r.ok) { let d; try { d = (await r.json()).error.message; } catch (e) { d = r.statusText; } throw new Error(d); }
   return r.json();
 }
@@ -1054,15 +1053,14 @@ function atualizarResumo() {
 $('btnAddItem').addEventListener('click', () => addItem());
 $('btnLimpar').addEventListener('click', () => {
   if (!confirm('Limpar todos os campos desta proposta?')) return;
-  ['p_link','p_orgao','p_pregao','p_uasg','p_data','p_prazo'].forEach(id => $(id).value = '');
+  ['p_link','p_orgao','p_pregao','p_uasg','p_data'].forEach(id => $(id).value = '');
   $('effectiResultado').innerHTML = '';
   ITENS = []; addItem(); setPMsg('');
 });
 
 async function salvarProposta() {
   const cab = { link: $('p_link').value.trim(), orgao: $('p_orgao').value.trim(),
-    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value,
-    prazo: $('p_prazo').value };
+    pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value };
   if (!cab.orgao || !cab.pregao || !cab.data) { setPMsg('Preencha ao menos Órgão / Comprador, Nº do Pregão e Data da Disputa.', 'warn'); return; }
   const validos = ITENS.filter(itemValido);
   if (!validos.length) { setPMsg('Nenhum item preenchido. Cada item precisa de descrição e custo.', 'warn'); return; }
@@ -1080,8 +1078,7 @@ async function salvarProposta() {
     if (!HDR1.length) await carregarPlanilha();
     const dataBR = isoParaBR(cab.data);
     const manual = { 'Link Effecti': cab.link, 'Órgão / Comprador': cab.orgao,
-      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR,
-      'Prazo para Envio': cab.prazo ? isoParaBR(cab.prazo.slice(0,10)) + ' ' + cab.prazo.slice(11,16) : '' };
+      'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR };
     const linhas = validos.map(it => {
       const d = dadosItem(it);
       const row = new Array(HDR1.length).fill('');
@@ -1438,41 +1435,35 @@ async function renderDashboard(forcar) {
    "#effecti=<dados>" no endereço. O trecho depois do # não sai do navegador.
    A leitura dos campos fica aqui no painel: se o Effecti mudar o layout, basta ajustar
    extrairEffecti() — não precisa reinstalar o favorito. */
-const semAcento = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const semAcento = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+/* Lê o texto da página "Meus avisos" do Effecti. Ali cada dado aparece como
+   uma linha com o rótulo ("UASG", "Licitação", "Data final"...) e o valor na linha seguinte.
+   O órgão é o título do aviso, que fica logo acima de "Enviado em ...". */
 function extrairEffecti(texto) {
   const linhas = String(texto || '').split(/\n/).map(limpar).filter(Boolean);
   const norm = linhas.map(semAcento);
-  // procura o rótulo no começo de uma linha; o valor vem depois dele ou nas 2 linhas seguintes
-  function campo(rotulos, teste) {
-    for (const r of rotulos) {
-      for (let i = 0; i < linhas.length; i++) {
-        const p = norm[i].indexOf(r);
-        if (p === -1 || p > 3) continue;
-        const resto = linhas[i].slice(p + r.length).replace(/^[\s:.\-–—]+/, '').trim();
-        for (const c of [resto, linhas[i+1] || '', linhas[i+2] || '']) {
-          if (!c) continue;
-          const v = teste(c);
-          if (v) return v;
-        }
-      }
-    }
-    return null;
-  }
-  const tData = c => { const m = c.match(/(\d{2})\/(\d{2})\/(\d{4})(?:\D{0,8}(\d{1,2})[:h](\d{2}))?/);
-    return m ? { iso: `${m[3]}-${m[2]}-${m[1]}`, hora: m[4] ? `${m[4].padStart(2,'0')}:${m[5]}` : '' } : null; };
-  const tUasg = c => { const m = c.match(/^\D{0,4}(\d{5,6})\b/); return m ? m[1] : null; };
-  const tNum = c => { const m = c.match(/\b(\d{1,6})\s*\/\s*(\d{4})\b/); return m ? m[1] + '/' + m[2] : null; };
-  const tTexto = c => (c.length > 3 && !/:$/.test(c) && /[a-z]{3}/i.test(c)) ? c : null;
-
+  const valor = rotulo => { const i = norm.findIndex(n => n === rotulo || n === rotulo + ':'); return i === -1 ? '' : (linhas[i+1] || ''); };
   const r = {};
-  r.orgao = campo(['orgao comprador','orgao / comprador','orgao','comprador','entidade','unidade compradora','unidade gestora'], tTexto);
-  r.uasg = campo(['codigo da uasg','codigo uasg','cod. uasg','uasg'], tUasg);
-  if (!r.uasg) { const m = String(texto).match(/UASG\D{0,12}(\d{5,6})/i); if (m) r.uasg = m[1]; }
-  r.pregao = campo(['numero do pregao','n. do pregao','nº do pregao','pregao eletronico','pregao','dispensa','edital','numero','nº','processo'], tNum);
-  r.prazo = campo(['prazo para envio','prazo de envio','prazo envio','limite para envio','limite de envio',
-    'fim do recebimento','encerramento do recebimento','recebimento das propostas','recebimento de propostas','prazo'], tData);
-  r.disputa = campo(['data da disputa','inicio da disputa','data de abertura','abertura da sessao','data da sessao',
-    'sessao publica','abertura','disputa','data do certame','data'], tData);
+
+  const iEnv = norm.findIndex(n => n.startsWith('enviado em'));
+  const iMeus = norm.findIndex(n => n.startsWith('encontre as melhores oportunidades'));
+  r.orgao = iEnv > 0 ? linhas[iEnv-1] : (iMeus !== -1 ? linhas[iMeus+1] || '' : '');
+
+  const portal = valor('portal de captura');
+  const uasg = valor('uasg');
+  if (/^\d{4,6}$/.test(uasg)) r.uasg = uasg;
+  else if (/bll/i.test(portal)) r.uasg = 'BLL';
+  else if (/compras\s*p[uú]blicas/i.test(portal)) r.uasg = 'CP';
+  else r.uasg = portal;
+
+  // No ComprasNet o nº vem junto com o ano (882026 = 88/2026)
+  let lic = valor('licitacao').replace(/\s+/g, '');
+  const m = lic.match(/^0*(\d+?)(20\d{2})$/);
+  if (m) lic = m[1] + '/' + m[2];
+  r.pregao = lic;
+
+  const df = valor('data final').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  r.disputa = df ? `${df[3]}-${df[2]}-${df[1]}` : '';
   return r;
 }
 function aplicarEffecti(d) {
@@ -1482,11 +1473,9 @@ function aplicarEffecti(d) {
   por('p_orgao', r.orgao, 'Órgão');
   por('p_pregao', r.pregao, 'Nº do Pregão');
   por('p_uasg', r.uasg, 'UASG');
-  por('p_data', r.disputa && r.disputa.iso, 'Data da Disputa');
-  por('p_prazo', r.prazo && (r.prazo.iso + 'T' + (r.prazo.hora || '23:59')), 'Prazo para Envio');
-  const semHora = r.prazo && !r.prazo.hora ? ' <span class="muted">(prazo sem horário na página: coloquei 23:59)</span>' : '';
+  por('p_data', r.disputa, 'Data da Disputa');
   $('effectiResultado').innerHTML = `<div class="msg ${faltou.length ? 'warn' : 'ok'}">
-    <b>Importado do Effecti:</b> ${ok.join(', ') || 'nada'}.${semHora}
+    <b>Importado do Effecti:</b> ${ok.join(', ') || 'nada'}.
     ${faltou.length ? `<br><b>Não encontrei:</b> ${faltou.join(', ')} — preencha à mão e confira os demais.` : ' Confira antes de salvar.'}
     <details style="margin-top:8px"><summary style="cursor:pointer">Ver texto recebido da página</summary>
     <textarea readonly style="width:100%;min-height:160px;margin-top:6px;font-size:11.5px">${esc(d.t || '')}</textarea></details></div>`;
@@ -1517,7 +1506,10 @@ window.addEventListener('hashchange', lerHashEffecti);
 })();
 
 /* ---------- login ---------- */
-function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prompt: TOKEN ? '' : 'consent' }); }
+function pedirToken() { if (TOKEN_CLIENT) TOKEN_CLIENT.requestAccessToken({ prompt: (TOKEN || ls.get('painel-lic-consentiu')) ? '' : 'consent' }); }
+// O acesso do Google vale cerca de 1 hora. Guardamos para que uma aba nova (ex.: aberta pelo
+// favorito do Effecti) não peça login de novo dentro desse tempo.
+function tokenGuardado() { try { const t = JSON.parse(ls.get('painel-lic-token') || 'null'); return t && t.exp > Date.now() ? t.v : null; } catch (e) { return null; } }
 async function aposLogin() {
   $('setup').classList.add('hide');
   $('app').classList.remove('hide');
@@ -1531,10 +1523,14 @@ function iniciarCliente(clientId) {
       client_id: clientId, scope: SCOPES,
       callback: resp => {
         if (resp.error) { $('setupMsg').innerHTML = `<div class="msg err">${esc(resp.error_description || resp.error)}</div>`; $('setup').classList.remove('hide'); return; }
-        TOKEN = resp.access_token; aposLogin();
+        TOKEN = resp.access_token;
+        ls.set('painel-lic-token', JSON.stringify({ v: TOKEN, exp: Date.now() + ((resp.expires_in || 3600) - 120) * 1000 }));
+        ls.set('painel-lic-consentiu', '1');
+        aposLogin();
       }
     });
-    pedirToken();
+    const t = tokenGuardado();
+    if (t) { TOKEN = t; aposLogin(); } else pedirToken();
   } catch (e) {
     $('setup').classList.remove('hide');
     $('setupMsg').innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
@@ -1554,7 +1550,7 @@ $('btnSalvarId').addEventListener('click', () => {
   $('setupMsg').innerHTML = '<div class="msg">Abrindo o login do Google…</div>';
   iniciarCliente(id);
 });
-$('btnSair').addEventListener('click', () => { ls.del('painel-lic-clientid'); location.reload(); });
+$('btnSair').addEventListener('click', () => { ls.del('painel-lic-clientid'); ls.del('painel-lic-token'); location.reload(); });
 $('btnBuscar').addEventListener('click', buscar);
 $('btnLancar').addEventListener('click', lancar);
 $('btnHoje').addEventListener('click', () => { $('dt').value = hojeIso(0); buscar(); });
