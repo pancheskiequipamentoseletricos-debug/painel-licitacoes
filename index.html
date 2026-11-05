@@ -907,64 +907,135 @@ $('btnExpandir').addEventListener('click', () => {
 
 /* ---------- gerar proposta ---------- */
 function addItem(dados) {
-  ITENS.push(Object.assign({ id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null }, dados || {}));
+  ITENS.push(Object.assign({ id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null,
+    manual: false, desc: '', marca: '', modelo: '', custo: '', catalogar: false }, dados || {}));
   renderItens();
+}
+/* valores efetivos do item: do catálogo ou digitados à mão */
+function dadosItem(it) {
+  if (it.manual) return {
+    sku: limpar(it.sku), descricao: limpar(it.desc), marca: limpar(it.marca),
+    modelo: limpar(it.modelo), custo: moeda(it.custo), doCatalogo: false
+  };
+  if (it.prod) return {
+    sku: it.prod.sku, descricao: it.prod.descricao, marca: it.prod.marca,
+    modelo: it.prod.modelo, custo: it.prod.custo, doCatalogo: true
+  };
+  return null;
+}
+function itemValido(it) {
+  const d = dadosItem(it);
+  return !!(d && d.descricao && d.custo > 0);
 }
 function removerItem(id) { ITENS = ITENS.filter(i => i.id !== id); if (!ITENS.length) addItem(); else renderItens(); }
 function renderItens() {
   $('itens').innerHTML = ITENS.map((it, i) => {
-    const p = it.prod, custo = p ? p.custo : 0;
+    const d = dadosItem(it);
+    const custo = d ? d.custo : 0;
     const limite = custo * (1 + (parseFloat(it.margem) || 0) / 100);
-    const s = p ? statusCotacao(p) : null;
+    const s = (!it.manual && it.prod) ? statusCotacao(it.prod) : null;
+    const achouSku = !it.manual && !!it.prod;
+    const skuDigitadoSemMatch = !it.manual && !!limpar(it.sku) && !it.prod;
+
+    const etiqueta = it.manual
+      ? '<span class="tag pend">item manual</span>'
+      : achouSku ? `<span class="tag ok">${esc(it.prod.marca || 'produto')} encontrado</span>`
+      : skuDigitadoSemMatch ? '<span class="tag skip">fora do catálogo</span>'
+      : '<span class="tag skip">aguardando código</span>';
+
     return `<div class="itemrow" data-id="${it.id}">
       <div class="itemhead"><b>Item ${i+1}</b>
-        ${p ? `<span class="tag ok">${esc(p.marca || 'produto')} encontrado</span>` : (it.sku ? '<span class="tag err">código não encontrado</span>' : '<span class="tag skip">aguardando código</span>')}
+        ${etiqueta}
         ${s && s.nivel !== 'ok' ? `<span class="cot ${s.nivel}">${s.nivel === 'sem' ? 'sem data de cotação' : (s.nivel === 'vencida' ? '⚠ ' : '') + s.texto}</span>` : ''}
         <div class="spacer" style="flex:1"></div>
+        <button class="btn-x" data-modo="${it.id}">${it.manual ? 'usar catálogo' : 'preencher à mão'}</button>
         <button class="btn-x" data-rm="${it.id}">remover</button>
       </div>
-      ${s && s.nivel === 'vencida' ? `<div class="msg err" style="margin:0 0 12px;padding:9px 13px;font-size:12.5px">Custo cotado em ${esc(p.dtCotacao)} — ${s.dias} dias atrás. Confirme o preço com o fornecedor antes de lançar a proposta.</div>` : ''}
+      ${s && s.nivel === 'vencida' ? `<div class="msg err" style="margin:0 0 12px;padding:9px 13px;font-size:12.5px">Custo cotado em ${esc(it.prod.dtCotacao)} — ${s.dias} dias atrás. Confirme o preço com o fornecedor antes de lançar a proposta.</div>` : ''}
+      ${skuDigitadoSemMatch ? `<div class="msg warn" style="margin:0 0 12px;padding:9px 13px;font-size:12.5px">Código <strong>${esc(it.sku)}</strong> não está no catálogo. Clique em <strong>preencher à mão</strong> para digitar descrição e custo deste item.</div>` : ''}
       <div class="grid g5">
         <div class="fld"><label>Item nº</label><input type="text" data-f="num" value="${esc(it.num)}" placeholder="1"></div>
-        <div class="fld"><label>Cód. Produto (SKU)</label><input type="text" data-f="sku" value="${esc(it.sku)}" list="dlSkus" placeholder="84044" spellcheck="false"></div>
+        <div class="fld"><label>Cód. Produto (SKU)</label><input type="text" data-f="sku" value="${esc(it.sku)}" ${it.manual ? '' : 'list="dlSkus"'} placeholder="${it.manual ? 'opcional' : '84044'}" spellcheck="false"></div>
         <div class="fld"><label>Valor de Referência</label><input type="text" data-f="ref" value="${esc(it.ref)}" placeholder="1.500,00"></div>
         <div class="fld"><label>Margem %</label><input type="text" data-f="margem" value="${esc(it.margem)}"></div>
       </div>
+      ${it.manual ? `
+      <div class="grid g5" style="margin-top:12px">
+        <div class="fld" style="grid-column:1/-1"><label>Descrição do item *</label><input type="text" data-f="desc" value="${esc(it.desc)}" placeholder="Descreva o produto como vai na proposta"></div>
+        <div class="fld"><label>Marca</label><input type="text" data-f="marca" value="${esc(it.marca)}" placeholder="SAMSUNG"></div>
+        <div class="fld"><label>Modelo</label><input type="text" data-f="modelo" value="${esc(it.modelo)}" placeholder="UN50U8600"></div>
+        <div class="fld"><label>Custo unit. (R$) *</label><input type="text" data-f="custo" value="${esc(it.custo)}" placeholder="826,34"></div>
+        <div class="fld" style="display:flex;align-items:flex-end">
+          <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:450;color:var(--text-2);margin:0 0 9px">
+            <input type="checkbox" data-f="catalogar" ${it.catalogar ? 'checked' : ''} style="width:16px;height:16px;padding:0;border-radius:4px">
+            Cadastrar no catálogo ao salvar
+          </label>
+        </div>
+      </div>` : ''}
       <div class="calc">
-        <div style="flex:1;min-width:240px"><span>Descrição</span><b>${p ? esc(p.descricao) : '—'}</b></div>
-        <div><span>Marca</span><b>${p ? esc(p.marca) : '—'}</b></div>
-        <div><span>Modelo</span><b>${p ? esc(p.modelo) : '—'}</b></div>
-        <div><span>Custo unit.</span><b>${p ? fmtBRL(custo) : '—'}</b></div>
-        <div class="destaque"><span>Limite máx. lance</span><b>${p ? fmtBRL(limite) : '—'}</b></div>
+        <div style="flex:1;min-width:240px"><span>Descrição</span><b>${d && d.descricao ? esc(d.descricao) : '—'}</b></div>
+        <div><span>Marca</span><b>${d && d.marca ? esc(d.marca) : '—'}</b></div>
+        <div><span>Modelo</span><b>${d && d.modelo ? esc(d.modelo) : '—'}</b></div>
+        <div><span>Custo unit.</span><b>${custo ? fmtBRL(custo) : '—'}</b></div>
+        <div class="destaque"><span>Limite máx. lance</span><b>${custo ? fmtBRL(limite) : '—'}</b></div>
       </div>
     </div>`;
   }).join('');
   atualizarResumo();
 }
 $('itens').addEventListener('input', e => {
-  const inp = e.target.closest('input[data-f]'); if (!inp) return;
+  const inp = e.target.closest('[data-f]'); if (!inp) return;
   const it = ITENS.find(x => x.id === Number(inp.closest('.itemrow').dataset.id)); if (!it) return;
-  it[inp.dataset.f] = inp.value;
-  if (inp.dataset.f === 'sku') { it.prod = acharProduto(inp.value); renderItensPreservando(it.id, 'sku'); }
-  else if (inp.dataset.f === 'margem') renderItensPreservando(it.id, 'margem');
+  const campo = inp.dataset.f;
+  it[campo] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  if (campo === 'sku' && !it.manual) { it.prod = acharProduto(inp.value); renderItensPreservando(it.id, 'sku'); }
+  else if (campo === 'margem' || campo === 'custo') renderItensPreservando(it.id, campo);
+  else if (campo === 'desc' || campo === 'marca' || campo === 'modelo') { atualizarPreview(it.id); atualizarResumo(); }
   else atualizarResumo();
 });
 $('itens').addEventListener('click', e => {
-  const b = e.target.closest('button[data-rm]'); if (b) removerItem(Number(b.dataset.rm));
+  const rm = e.target.closest('button[data-rm]');
+  if (rm) { removerItem(Number(rm.dataset.rm)); return; }
+  const md = e.target.closest('button[data-modo]');
+  if (md) {
+    const it = ITENS.find(x => x.id === Number(md.dataset.modo)); if (!it) return;
+    it.manual = !it.manual;
+    if (it.manual && it.prod) {   // leva os dados do catálogo para os campos editáveis
+      it.desc = it.desc || it.prod.descricao; it.marca = it.marca || it.prod.marca;
+      it.modelo = it.modelo || it.prod.modelo; it.custo = it.custo || numBR(it.prod.custo);
+    }
+    if (!it.manual) it.prod = acharProduto(it.sku);
+    renderItens();
+  }
 });
+/* atualiza só o bloco de resumo do item, sem redesenhar e perder o cursor */
+function atualizarPreview(id) {
+  const it = ITENS.find(x => x.id === id); if (!it) return;
+  const row = document.querySelector(`.itemrow[data-id="${id}"] .calc`); if (!row) return;
+  const d = dadosItem(it), custo = d ? d.custo : 0;
+  const limite = custo * (1 + (parseFloat(it.margem) || 0) / 100);
+  const b = row.querySelectorAll('b');
+  b[0].textContent = d && d.descricao ? d.descricao : '—';
+  b[1].textContent = d && d.marca ? d.marca : '—';
+  b[2].textContent = d && d.modelo ? d.modelo : '—';
+  b[3].textContent = custo ? fmtBRL(custo) : '—';
+  b[4].textContent = custo ? fmtBRL(limite) : '—';
+}
 function renderItensPreservando(id, campo) {
   renderItens();
   const el = document.querySelector(`.itemrow[data-id="${id}"] input[data-f="${campo}"]`);
   if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
 }
 function atualizarResumo() {
-  const validos = ITENS.filter(i => i.prod);
-  const soma = validos.reduce((a,i) => a + i.prod.custo * (1 + (parseFloat(i.margem)||0)/100), 0);
-  const venc = validos.filter(i => statusCotacao(i.prod).nivel === 'vencida').length;
+  const validos = ITENS.filter(itemValido);
+  const soma = validos.reduce((a,i) => a + dadosItem(i).custo * (1 + (parseFloat(i.margem)||0)/100), 0);
+  const venc = validos.filter(i => !i.manual && i.prod && statusCotacao(i.prod).nivel === 'vencida').length;
+  const man = validos.filter(i => i.manual).length;
   $('resumoProposta').innerHTML = validos.length
     ? `${validos.length} item(ns) pronto(s) · soma dos limites ${fmtBRL(soma)}`
+      + (man ? ` · ${man} manual(is)` : '')
       + (venc ? ` · <span style="color:var(--err);font-weight:600">${venc} com cotação vencida</span>` : '')
-    : 'Nenhum item com código válido ainda.';
+    : 'Preencha ao menos um item com descrição e custo.';
   $('btnSalvar').disabled = !validos.length;
 }
 $('btnAddItem').addEventListener('click', () => addItem());
@@ -978,10 +1049,10 @@ async function salvarProposta() {
   const cab = { link: $('p_link').value.trim(), orgao: $('p_orgao').value.trim(),
     pregao: $('p_pregao').value.trim(), uasg: $('p_uasg').value.trim(), data: $('p_data').value };
   if (!cab.orgao || !cab.pregao || !cab.data) { setPMsg('Preencha ao menos Órgão / Comprador, Nº do Pregão e Data da Disputa.', 'warn'); return; }
-  const validos = ITENS.filter(i => i.prod);
-  if (!validos.length) { setPMsg('Nenhum item com código válido.', 'warn'); return; }
+  const validos = ITENS.filter(itemValido);
+  if (!validos.length) { setPMsg('Nenhum item preenchido. Cada item precisa de descrição e custo.', 'warn'); return; }
 
-  const vencidos = validos.filter(i => statusCotacao(i.prod).nivel === 'vencida');
+  const vencidos = validos.filter(i => !i.manual && i.prod && statusCotacao(i.prod).nivel === 'vencida');
   if (vencidos.length) {
     const lista = vencidos.map(i => `• ${i.prod.sku} — cotado em ${i.prod.dtCotacao} (${diasCotacao(i.prod)} dias)`).join('\n');
     if (!confirm(`Atenção: ${vencidos.length} item(ns) com cotação vencida (${COT_VENCIDA}+ dias):\n\n${lista}\n\nO custo pode estar defasado. Gravar mesmo assim?`)) return;
@@ -996,11 +1067,12 @@ async function salvarProposta() {
     const manual = { 'Link Effecti': cab.link, 'Órgão / Comprador': cab.orgao,
       'Nº do Pregão / Dispensa': cab.pregao, 'UASG': cab.uasg, 'Data da Disputa': dataBR };
     const linhas = validos.map(it => {
+      const d = dadosItem(it);
       const row = new Array(HDR1.length).fill('');
       const set = (nome, v) => { if (IDX1[nome] !== undefined) row[IDX1[nome]] = v; };
       Object.entries(manual).forEach(([k,v]) => set(k, v));
       set('Item nº', it.num);
-      set('Cód. Produto (SKU)', it.prod.sku);
+      set('Cód. Produto (SKU)', d.sku);
       set('Valor de Referência', it.ref ? numBR(moeda(it.ref)) : '');
       return row;
     });
@@ -1015,13 +1087,14 @@ async function salvarProposta() {
       const lido = await api(rangeUrl(ABA1, `A${primeira}:${colLetra(HDR1.length-1)}${primeira + linhas.length - 1}`) + '?valueRenderOption=FORMULA');
       const atual = lido.values || [], updates = [];
       validos.forEach((it, i) => {
+        const d = dadosItem(it);
         const linhaN = primeira + i, row = atual[i] || [];
         const mg = parseFloat(it.margem) || MARGEM_PADRAO;
         const derivadas = {
-          'Descrição do Item': it.prod.descricao, 'Marca': it.prod.marca, 'Modelo': it.prod.modelo,
-          'Custo Unit. (R$)': numBR(it.prod.custo),
+          'Descrição do Item': d.descricao, 'Marca': d.marca, 'Modelo': d.modelo,
+          'Custo Unit. (R$)': numBR(d.custo),
           'Margem %': String(mg).replace('.', ',') + '%',
-          'LIMITE MÁX. LANCE (R$)': numBR(it.prod.custo * (1 + mg / 100))
+          'LIMITE MÁX. LANCE (R$)': numBR(d.custo * (1 + mg / 100))
         };
         Object.entries(derivadas).forEach(([nome, valor]) => {
           const ci = IDX1[nome]; if (ci === undefined) return;
@@ -1035,8 +1108,37 @@ async function salvarProposta() {
         completadas = updates.length;
       }
     }
+    /* itens manuais marcados para catalogar */
+    let catalogados = 0;
+    const paraCatalogar = validos.filter(it => it.manual && it.catalogar && limpar(it.sku) && !acharProduto(it.sku));
+    if (paraCatalogar.length) {
+      try {
+        if (!HDR2.length) await carregarProdutos();
+        const linhasProd = paraCatalogar.map(it => {
+          const d = dadosItem(it);
+          const r = new Array(HDR2.length).fill('');
+          const set2 = (nome, v) => { if (IDX2[nome] !== undefined) r[IDX2[nome]] = v; };
+          set2('Cód. Produto (SKU)', d.sku);
+          set2('Descrição do Produto', d.descricao);
+          set2('Marca', d.marca);
+          set2('Modelo', d.modelo);
+          set2('Custo Unit. (R$)', numBR(d.custo));
+          set2('Data da Cotação', isoParaBR(hojeIso(0)));
+          set2('Origem do Preço', 'Cadastro pelo painel');
+          return r;
+        });
+        await api(rangeUrl(ABA2, `A${LINHA_HDR2}:${colLetra(HDR2.length-1)}`)
+          + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+          { method: 'POST', body: JSON.stringify({ values: linhasProd }) });
+        catalogados = linhasProd.length;
+        await carregarProdutos();
+      } catch (e) { console.warn('catálogo:', e.message); }
+    }
+
     PLANILHA = null;
-    setPMsg(`${linhas.length} linha(s) gravada(s)${completadas ? `, com ${completadas} célula(s) calculada(s) preenchida(s)` : ' — as colunas calculadas se preencheram sozinhas'}. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
+    setPMsg(`${linhas.length} linha(s) gravada(s)${completadas ? `, com ${completadas} célula(s) calculada(s) preenchida(s)` : ' — as colunas calculadas se preencheram sozinhas'}`
+      + (catalogados ? ` · ${catalogados} produto(s) novo(s) no catálogo` : '')
+      + `. <a href="${SHEET_URL}" target="_blank" rel="noopener">Conferir na planilha</a>`, 'ok');
     ITENS = []; addItem();
     $('dt').value = cab.data;
   } catch (e) { setPMsg('Não consegui gravar: ' + esc(e.message), 'err'); }
