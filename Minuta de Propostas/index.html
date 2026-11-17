@@ -353,6 +353,7 @@ code { background: var(--surface-2); border: 1px solid var(--border-soft); paddi
       <input type="date" id="dataMinuta" title="Mostrar só os pregões deste dia" aria-label="Dia da disputa" style="border-radius:999px">
       <button class="btn-ghost btn-mini hide" id="limparDataMinuta" title="Voltar a mostrar todos os dias">× limpar dia</button>
       <button class="btn-ghost" id="btnRecarregarMinuta">Recarregar</button>
+      <button class="btn-go" id="btnGerarDados" title="Exporta os pregões da tela em Markdown (.md)">Gerar dados</button>
       <div class="spacer"></div>
       <button class="btn-ghost btn-mini" id="btnExpandir">Expandir tudo</button>
     </div>
@@ -655,6 +656,7 @@ async function carregarPlanilha() {
       suspenso: /SUSPENSO/i.test(orgao), semNumero: !pregao
     });
   });
+  itens.forEach(it => it.total = it.limite * (moeda(it.qtd) || 1));   // valor total do item
   PLANILHA = itens; return itens;
 }
 async function carregarProdutos() {
@@ -726,7 +728,7 @@ function agrupar(itens) {
     const k = [it.data,it.orgao,it.pregao,it.uasg].join('§');
     if (!m.has(k)) m.set(k, { chave: k, data: it.data, orgao: it.orgao, pregao: it.pregao, uasg: it.uasg,
       link: '', portal: '', itens: 0, limite: 0, lista: [], suspenso: it.suspenso, semNumero: it.semNumero });
-    const g = m.get(k); g.itens++; g.limite += it.limite; g.lista.push(it);
+    const g = m.get(k); g.itens++; g.limite += (it.total !== undefined ? it.total : it.limite); g.lista.push(it);
     if (!g.link && it.link) g.link = it.link;
     if (!g.portal && it.portal) g.portal = it.portal;
   }
@@ -841,7 +843,8 @@ async function renderMinuta(forcar) {
     <div class="card"><div class="lbl">Pregões</div><div class="val">${grupos.length}</div></div>
     <div class="card"><div class="lbl">Itens</div><div class="val">${totItens}</div></div>
     <div class="card"><div class="lbl">Órgãos distintos</div><div class="val">${orgaosUnicos}</div></div>
-    <div class="card ok"><div class="lbl">Soma dos limites</div><div class="val sm">${fmtBRL(totLimite)}</div></div>`;
+    <div class="card ok"><div class="lbl">Total (limite × qtd)</div><div class="val sm">${fmtBRL(totLimite)}</div></div>`;
+  GRUPOS_MIN = grupos;
   $('minutaHint').textContent = grupos.length ? grupos.length + ' resultado(s)' : '';
 
   if (!grupos.length) { $('minutaLista').innerHTML = '<div class="empty">Nenhum pregão encontrado com esse filtro.</div>'; return; }
@@ -861,6 +864,7 @@ async function renderMinuta(forcar) {
         <td class="num"><input class="mini" data-l="${it.linha}" data-c="custo" value="${esc(valMin(it,'custo'))}" placeholder="0,00"></td>
         <td class="num"><input class="mini qtd" data-l="${it.linha}" data-c="margem" value="${esc(valMin(it,'margem'))}" placeholder="30"></td>
         <td class="num"><input class="mini" data-l="${it.linha}" data-c="limite" value="${esc(valMin(it,'limite'))}" placeholder="0,00" style="color:var(--ok);font-weight:600"></td>
+        <td class="num" data-total="${it.linha}" style="font-weight:600">${fmtBRL(moeda(valMin(it,'limite')) * (moeda(valMin(it,'qtd')) || 1))}</td>
         <td class="num">${it.ref ? fmtBRL(it.ref) : '<span class="muted">—</span>'}</td>
         <td>${esc(it.obs) || '<span class="muted">—</span>'}</td>
       </tr>`).join('');
@@ -873,17 +877,18 @@ async function renderMinuta(forcar) {
           ${g.link ? ` · <a href="${esc(g.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Effecti</a>` : ''}</small>
         </div>
         <div class="metrica"><span>Itens</span><b>${g.itens}</b></div>
-        <div class="metrica"><span>Soma limites</span><b style="color:var(--ok)">${fmtBRL(g.limite)}</b></div>
+        <div class="metrica"><span>Total (limite × qtd)</span><b style="color:var(--ok)">${fmtBRL(g.limite)}</b></div>
         <button class="btn-x" data-del="${esc(g.chave)}" title="Apagar este pregão da planilha">apagar</button>
       </div>
       <div class="acc-body">
         <table><thead><tr>
           <th class="num">Item</th><th>SKU</th><th>Descrição</th><th>Marca</th><th>Modelo</th>
-          <th class="num">Qtd.</th><th class="num">Custo (R$)</th><th class="num">Margem %</th><th class="num">Limite máx. (R$)</th>
+          <th class="num">Qtd.</th><th class="num">Custo (R$)</th><th class="num">Margem %</th><th class="num">Limite máx. (R$)</th><th class="num" title="Limite máx. × quantidade">Total (R$)</th>
           <th class="num">Vlr. referência</th><th>Observações</th>
         </tr></thead><tbody>${itensHtml}</tbody></table>
         <div class="min-bar">
           <span class="muted" data-conta style="font-size:12.5px;flex:1"></span>
+          <button class="btn-ghost btn-mini" data-dados="${esc(g.chave)}" title="Gerar dados deste pregão em Markdown">Gerar dados</button>
           <button class="btn-ghost btn-mini" data-desfazer="${esc(g.chave)}" disabled>Desfazer</button>
           <button class="btn-go btn-mini" data-salvar="${esc(g.chave)}" disabled>Salvar alterações</button>
         </div>
@@ -894,6 +899,9 @@ async function renderMinuta(forcar) {
 }
 $('minutaLista').addEventListener('click', e => {
   if (e.target.closest('a')) return;
+  const gd = e.target.closest('button[data-dados]');
+  if (gd) { const g = GRUPOS_MIN.find(x => x.chave === gd.dataset.dados);
+    if (g) abrirGerarDados([g], `dados-${nomeSeguro(g.orgao)}-${nomeSeguro(g.pregao)}.md`); return; }
   const sv = e.target.closest('button[data-salvar]');
   if (sv) { sv.disabled = true; salvarEdicoesMinuta(sv.dataset.salvar); return; }
   const dz = e.target.closest('button[data-desfazer]');
@@ -969,6 +977,8 @@ $('minutaLista').addEventListener('input', e => {
   }
   if (campo === 'limite') ed.limiteAuto = false;
   EDIT_MIN.set(linha, ed);
+  const tc = inp.closest('tr').querySelector('[data-total]');
+  if (tc) tc.textContent = fmtBRL(moeda(valMin(it, 'limite')) * (moeda(valMin(it, 'qtd')) || 1));
   atualizarBarraMinuta(inp.closest('.acc').dataset.k);
 });
 async function salvarEdicoesMinuta(chave) {
@@ -1010,6 +1020,91 @@ $('dataMinuta').addEventListener('change', () => {
   renderMinuta();
 });
 $('limparDataMinuta').addEventListener('click', () => { $('dataMinuta').value = ''; $('limparDataMinuta').classList.add('hide'); renderMinuta(); });
+/* ---------- Gerar dados (Markdown) ----------
+   Monta um .md com os pregões que estão na tela (respeita busca, dia e filtro),
+   para cadastrar as propostas nos portais ou colar no Claude. */
+let GRUPOS_MIN = [];
+const qtdNum = q => moeda(q) || 0;
+const mdCel = s => String(s == null ? '' : s).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+const brl = n => n ? fmtBRL(n) : '—';
+function gerarMarkdown(grupos) {
+  const agora = new Date().toLocaleString('pt-BR');
+  const totItens = grupos.reduce((a, g) => a + g.itens, 0);
+  const out = [`# Dados para cadastro de propostas`, ``,
+    `Gerado em ${agora} · ${grupos.length} pregão(ões) · ${totItens} item(ns)`, ``];
+  for (const g of grupos) {
+    const itens = g.lista.slice().sort((a, b) => (parseInt(a.itemNum) || 0) - (parseInt(b.itemNum) || 0));
+    out.push(`## ${mdCel(g.orgao)} — Pregão ${mdCel(g.pregao) || 's/ nº'}`, ``,
+      `- **Data da disputa:** ${g.data}`,
+      `- **Nº do pregão / dispensa:** ${mdCel(g.pregao) || '—'}`,
+      `- **UASG:** ${mdCel(g.uasg) || '—'}`,
+      ...(g.portal ? [`- **Portal de captura:** ${mdCel(g.portal)}`] : []),
+      ...(g.link ? [`- **Link Effecti:** ${g.link}`] : []),
+      `- **Itens:** ${g.itens}`,
+      `- **Total (limite × quantidade):** ${brl(g.limite)}`, ``,
+      `| Item | SKU | Marca | Modelo | Qtd. | Unid. | Custo unit. | Margem | Limite unit. | Limite total | Vlr. referência |`,
+      `|---:|---|---|---|---:|---|---:|---:|---:|---:|---:|`);
+    for (const it of itens) {
+      out.push(`| ${mdCel(it.itemNum) || '—'} | ${mdCel(it.sku) || '—'} | ${mdCel(it.marca) || '—'} | ${mdCel(it.modelo) || '—'} | ${mdCel(it.qtd) || '—'} | ${mdCel(it.unid) || '—'} | ${brl(it.custo)} | ${mdCel(it.margem) || '—'} | ${brl(it.limite)} | ${brl(it.total)} | ${brl(it.ref)} |`);
+    }
+    out.push(``);
+    for (const it of itens) {
+      out.push(`### Item ${mdCel(it.itemNum) || '—'}`, ``,
+        `- **Descrição:** ${mdCel(it.descricao) || '—'}`,
+        `- **Marca:** ${mdCel(it.marca) || '—'}`,
+        `- **Modelo:** ${mdCel(it.modelo) || '—'}`,
+        `- **SKU:** ${mdCel(it.sku) || '—'}`,
+        `- **Quantidade:** ${mdCel(it.qtd) || '—'} ${mdCel(it.unid)}`.trimEnd(),
+        `- **Custo unitário:** ${brl(it.custo)}`,
+        `- **Margem:** ${mdCel(it.margem) || '—'}`,
+        `- **Limite máx. de lance (unitário):** ${brl(it.limite)}`,
+        `- **Limite máx. de lance (total):** ${brl(it.total)}`,
+        `- **Valor de referência:** ${brl(it.ref)}`,
+        ...(it.obs ? [`- **Observações:** ${mdCel(it.obs)}`] : []), ``);
+    }
+  }
+  return out.join('\n');
+}
+function abrirGerarDados(grupos, nomeArq) {
+  if (!grupos.length) { setMMsg('Nenhum pregão na tela para gerar dados. Ajuste a busca ou o dia.', 'warn'); return; }
+  const md = gerarMarkdown(grupos);
+  const pendentes = grupos.some(g => g.lista.some(it => EDIT_MIN.has(it.linha)));
+  let ov = $('gerarDados');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'gerarDados'; ov.className = 'modal-ov'; document.body.appendChild(ov); }
+  ov.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="gdTit">
+    <h2 id="gdTit">Gerar dados <span class="hint">${grupos.length} pregão(ões) · Markdown</span></h2>
+    ${pendentes ? '<div class="msg warn" style="margin-bottom:10px">Há alterações não salvas nestes pregões. O arquivo usa os valores já gravados na planilha — salve antes se quiser incluí-las.</div>' : ''}
+    <textarea id="gdTexto" readonly spellcheck="false" style="flex:1;min-height:320px;width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px;border-radius:10px"></textarea>
+    <div class="bar" style="margin-top:14px">
+      <span class="muted" id="gdMsg" style="font-size:12.5px"></span>
+      <div class="spacer"></div>
+      <button class="btn-ghost" id="gdFechar" type="button">Fechar</button>
+      <button class="btn-ghost" id="gdCopiar" type="button">Copiar</button>
+      <button class="btn-go" id="gdBaixar" type="button">Baixar .md</button>
+    </div></div>`;
+  $('gdTexto').value = md;
+  ov.classList.remove('hide');
+  const fechar = () => ov.classList.add('hide');
+  $('gdFechar').onclick = fechar;
+  ov.onclick = e => { if (e.target === ov) fechar(); };
+  $('gdCopiar').onclick = async () => {
+    try { await navigator.clipboard.writeText(md); }
+    catch (e) { $('gdTexto').select(); document.execCommand('copy'); }
+    $('gdMsg').textContent = 'Copiado. É só colar no Claude ou num arquivo.';
+  };
+  $('gdBaixar').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown;charset=utf-8' }));
+    a.download = nomeArq; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    $('gdMsg').textContent = 'Arquivo ' + nomeArq + ' baixado.';
+  };
+}
+const nomeSeguro = s => semAcento(String(s || '')).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+$('btnGerarDados').addEventListener('click', () => {
+  const dia = $('dataMinuta').value;
+  abrirGerarDados(GRUPOS_MIN, `dados-propostas-${dia || hojeIso(0)}.md`);
+});
 $('buscaMinuta').addEventListener('input', () => renderMinuta());
 $('filtroMinuta').addEventListener('change', () => renderMinuta());
 $('btnRecarregarMinuta').addEventListener('click', () => renderMinuta(true));
@@ -1027,7 +1122,7 @@ $('btnExpandir').addEventListener('click', () => {
 function novoItem() {
   return { id: ++seq, num: '', sku: '', ref: '', margem: MARGEM_PADRAO, prod: null,
     manual: false, desc: '', marca: '', modelo: '', custo: '', catalogar: false,
-    qtd: '', unid: '', descEdital: '', descProp: '' };
+    qtd: '', unid: '', descEdital: '', descProp: '', custoProp: '' };
 }
 function addItem(dados) {
   ITENS.push(Object.assign(novoItem(), dados || {}));
@@ -1041,7 +1136,7 @@ function dadosItem(it) {
   };
   if (it.prod) return {
     sku: it.prod.sku, descricao: limpar(it.descProp) || it.prod.descricao, marca: it.prod.marca,
-    modelo: it.prod.modelo, custo: it.prod.custo, doCatalogo: true
+    modelo: it.prod.modelo, custo: limpar(it.custoProp) ? moeda(it.custoProp) : it.prod.custo, doCatalogo: true
   };
   return null;
 }
@@ -1086,6 +1181,7 @@ function renderItens() {
       ${achouSku ? `
       <div class="grid g5" style="margin-top:12px">
         <div class="fld" style="grid-column:1/-1"><label>Descrição na proposta <span style="text-transform:none;letter-spacing:0">(veio do catálogo · pode editar)</span></label><input type="text" data-f="descProp" value="${esc(it.descProp || it.prod.descricao)}"></div>
+        <div class="fld"><label>Custo nesta proposta (R$) <span style="text-transform:none;letter-spacing:0">(pode editar)</span></label><input type="text" data-f="custoProp" value="${esc(it.custoProp || numBR(it.prod.custo))}" title="Muda só nesta proposta; o catálogo não é alterado"></div>
       </div>` : ''}
       ${it.manual ? `
       <div class="grid g5" style="margin-top:12px">
@@ -1106,6 +1202,7 @@ function renderItens() {
         <div><span>Modelo</span><b>${d && d.modelo ? esc(d.modelo) : '—'}</b></div>
         <div><span>Custo unit.</span><b>${custo ? fmtBRL(custo) : '—'}</b></div>
         <div class="destaque"><span>Limite máx. lance</span><b>${custo ? fmtBRL(limite) : '—'}</b></div>
+        <div class="destaque"><span>Total (× ${esc(limpar(it.qtd) || '1')})</span><b>${custo ? fmtBRL(limite * (moeda(it.qtd) || 1)) : '—'}</b></div>
       </div>
     </div>`;
   }).join('');
@@ -1116,9 +1213,9 @@ $('itens').addEventListener('input', e => {
   const it = ITENS.find(x => x.id === Number(inp.closest('.itemrow').dataset.id)); if (!it) return;
   const campo = inp.dataset.f;
   it[campo] = inp.type === 'checkbox' ? inp.checked : inp.value;
-  if (campo === 'sku' && !it.manual) { it.prod = acharProduto(inp.value); it.descProp = ''; renderItensPreservando(it.id, 'sku'); }
+  if (campo === 'sku' && !it.manual) { it.prod = acharProduto(inp.value); it.descProp = ''; it.custoProp = ''; renderItensPreservando(it.id, 'sku'); }
   else if (campo === 'margem' || campo === 'custo') renderItensPreservando(it.id, campo);
-  else if (campo === 'desc' || campo === 'descProp' || campo === 'marca' || campo === 'modelo') { atualizarPreview(it.id); atualizarResumo(); }
+  else if (campo === 'desc' || campo === 'descProp' || campo === 'custoProp' || campo === 'qtd' || campo === 'marca' || campo === 'modelo') { atualizarPreview(it.id); atualizarResumo(); }
   else atualizarResumo();
 });
 $('itens').addEventListener('click', e => {
@@ -1130,7 +1227,7 @@ $('itens').addEventListener('click', e => {
     it.manual = !it.manual;
     if (it.manual && it.prod) {   // leva os dados do catálogo para os campos editáveis
       it.desc = it.desc || limpar(it.descProp) || it.prod.descricao; it.marca = it.marca || it.prod.marca;
-      it.modelo = it.modelo || it.prod.modelo; it.custo = it.custo || numBR(it.prod.custo);
+      it.modelo = it.modelo || it.prod.modelo; it.custo = it.custo || (limpar(it.custoProp) || numBR(it.prod.custo));
     }
     if (it.manual && !it.desc && it.descEdital) it.desc = it.descEdital;   // sem produto: começa pela descrição do edital
     if (!it.manual) it.prod = acharProduto(it.sku);
@@ -1149,6 +1246,8 @@ function atualizarPreview(id) {
   b[2].textContent = d && d.modelo ? d.modelo : '—';
   b[3].textContent = custo ? fmtBRL(custo) : '—';
   b[4].textContent = custo ? fmtBRL(limite) : '—';
+  if (b[5]) { b[5].textContent = custo ? fmtBRL(limite * (moeda(it.qtd) || 1)) : '—';
+    b[5].previousElementSibling.textContent = `Total (× ${limpar(it.qtd) || '1'})`; }
 }
 function renderItensPreservando(id, campo) {
   renderItens();
@@ -1157,11 +1256,11 @@ function renderItensPreservando(id, campo) {
 }
 function atualizarResumo() {
   const validos = ITENS.filter(itemValido);
-  const soma = validos.reduce((a,i) => a + dadosItem(i).custo * (1 + (parseFloat(i.margem)||0)/100), 0);
+  const soma = validos.reduce((a,i) => a + dadosItem(i).custo * (1 + (parseFloat(i.margem)||0)/100) * (moeda(i.qtd) || 1), 0);
   const venc = validos.filter(i => !i.manual && i.prod && statusCotacao(i.prod).nivel === 'vencida').length;
   const man = validos.filter(i => i.manual).length;
   $('resumoProposta').innerHTML = validos.length
-    ? `${validos.length} item(ns) pronto(s) · soma dos limites ${fmtBRL(soma)}`
+    ? `${validos.length} item(ns) pronto(s) · total (limite × qtd) ${fmtBRL(soma)}`
       + (man ? ` · ${man} manual(is)` : '')
       + (venc ? ` · <span style="color:var(--err);font-weight:600">${venc} com cotação vencida</span>` : '')
     : 'Preencha ao menos um item com descrição e custo.';
